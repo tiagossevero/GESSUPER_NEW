@@ -776,21 +776,21 @@ def export_to_excel_template(df: pd.DataFrame, contrib_info: dict, nivel: str, p
                 cell = ws1.cell(row=row_idx, column=col_idx)
                 value = row_dict[col_name]
                 
-                # Converte datas
+                # Converte datas - dayfirst=True para interpretar DD/MM/YYYY corretamente
                 if col_name == 'data_emissao' and pd.notna(value):
                     try:
                         if isinstance(value, str):
-                            cell.value = pd.to_datetime(value).date()
+                            cell.value = pd.to_datetime(value, dayfirst=True).date()
                         else:
                             cell.value = value
                         cell.number_format = 'DD/MM/YYYY'
                     except:
                         cell.value = value
-                # Formata período como DD/MM/AAAA (mesmo tratamento que data_emissao)
+                # Formata período como DD/MM/AAAA - dayfirst=True para interpretar corretamente
                 elif col_name == 'periodo' and pd.notna(value):
                     try:
                         if isinstance(value, str):
-                            cell.value = pd.to_datetime(value).date()
+                            cell.value = pd.to_datetime(value, dayfirst=True).date()
                         else:
                             cell.value = value
                         cell.number_format = 'DD/MM/YYYY'
@@ -927,11 +927,11 @@ def export_to_excel_template(df: pd.DataFrame, contrib_info: dict, nivel: str, p
     ultima_linha_dados = len(df) + 3  # Linha final dos dados na aba J1
     
     for row_idx, periodo in enumerate(periodos, 12):
-        # Período - formata como DD/MM/YYYY para evitar inversão de data
+        # Período - formata como DD/MM/YYYY com dayfirst=True para evitar inversão de data
         cell_a = ws2.cell(row=row_idx, column=1)
         try:
             if isinstance(periodo, str):
-                cell_a.value = pd.to_datetime(periodo).date()
+                cell_a.value = pd.to_datetime(periodo, dayfirst=True).date()
             else:
                 cell_a.value = periodo
             cell_a.number_format = 'DD/MM/YYYY'
