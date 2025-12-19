@@ -756,7 +756,11 @@ def export_to_excel_template(df: pd.DataFrame, contrib_info: dict, nivel: str, p
     }
     
     report_progress(10, "Preenchendo dados da aba J1")
-    
+
+    # Ordena dados por data_emissao (mais antigo primeiro) para ordem cronológica
+    if 'data_emissao' in df.columns:
+        df = df.sort_values('data_emissao', ascending=True, na_position='last').reset_index(drop=True)
+
     # Preenche os dados a partir da linha 4
     total_rows = len(df)
     progress_interval = max(1, total_rows // 20)  # Atualiza a cada 5%
@@ -920,8 +924,13 @@ def export_to_excel_template(df: pd.DataFrame, contrib_info: dict, nivel: str, p
         cell.alignment = Alignment(horizontal="center", vertical="center")
         cell.border = thin_border
     
-    # Obtém períodos únicos
-    periodos = sorted(df['periodo'].dropna().unique()) if 'periodo' in df.columns else []
+    # Obtém períodos únicos e ordena cronologicamente (mais antigo primeiro)
+    if 'periodo' in df.columns:
+        periodos_unicos = df['periodo'].dropna().unique()
+        # Converte para datetime para ordenação correta, depois ordena
+        periodos = sorted(periodos_unicos, key=lambda x: pd.to_datetime(x, dayfirst=True) if isinstance(x, str) else x)
+    else:
+        periodos = []
     
     # Dados por período com fórmulas SUMIF
     ultima_linha_dados = len(df) + 3  # Linha final dos dados na aba J1
