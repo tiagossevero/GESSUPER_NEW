@@ -786,9 +786,16 @@ def export_to_excel_template(df: pd.DataFrame, contrib_info: dict, nivel: str, p
                         cell.number_format = 'DD/MM/YYYY'
                     except:
                         cell.value = value
-                # Formata período como MM/AAAA
+                # Formata período como DD/MM/AAAA (mesmo tratamento que data_emissao)
                 elif col_name == 'periodo' and pd.notna(value):
-                    cell.value = value
+                    try:
+                        if isinstance(value, str):
+                            cell.value = pd.to_datetime(value).date()
+                        else:
+                            cell.value = value
+                        cell.number_format = 'DD/MM/YYYY'
+                    except:
+                        cell.value = value
                 # Valores numéricos monetários
                 elif col_name in ['icms_emitente', 'bc_fisco'] and pd.notna(value):
                     try:
@@ -920,9 +927,16 @@ def export_to_excel_template(df: pd.DataFrame, contrib_info: dict, nivel: str, p
     ultima_linha_dados = len(df) + 3  # Linha final dos dados na aba J1
     
     for row_idx, periodo in enumerate(periodos, 12):
-        # Período
+        # Período - formata como DD/MM/YYYY para evitar inversão de data
         cell_a = ws2.cell(row=row_idx, column=1)
-        cell_a.value = periodo
+        try:
+            if isinstance(periodo, str):
+                cell_a.value = pd.to_datetime(periodo).date()
+            else:
+                cell_a.value = periodo
+            cell_a.number_format = 'DD/MM/YYYY'
+        except:
+            cell_a.value = periodo
         cell_a.border = thin_border
         cell_a.alignment = Alignment(horizontal="center")
         
