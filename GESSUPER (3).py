@@ -66,6 +66,145 @@ RANKING_CACHE_TTL = 86400
 
 
 # =============================================================================
+# CONFIGURAÇÃO DE GRUPOS (EXTENSÍVEL)
+# =============================================================================
+# Cada grupo tem suas próprias tabelas e configurações de exportação.
+# Para adicionar um novo grupo, basta adicionar uma nova entrada neste dicionário.
+
+GRUPOS_CONFIG = {
+    "GESSUPER": {
+        "nome": "GESSUPER",
+        "nome_display": "Infrações GESSUPER",
+        "descricao": "Sistema de Infrações GESSUPER - Receita Estadual SC",
+        # Tabelas (sem NFe para GESSUPER)
+        "tabelas": {
+            "nfce": "niat.infracoes_gessuper_nfce_3M",
+            "cupons": "niat.infracoes_gessuper_cupons_3M",
+            "nfe": None  # GESSUPER não tem NFe
+        },
+        # Modelos de exportação
+        "modelos_exportacao": ["Anexo J"],  # Modelo único para NFCe + Cupom
+        # Colunas específicas para export (padrão do GESSUPER)
+        "export_config": {
+            "Anexo J": {
+                "titulo_aba_dados": "ANEXO J1 - NOTAS DE SAÍDAS",
+                "titulo_aba_icms": "ANEXO J2 - ICMS DEVIDO",
+                "colunas_header": [
+                    "Data de emissão", "Período", "Tipo Documento", "Chave de acesso",
+                    "Link de Acesso", "ECF-FAB", "Entrada ou saída", "CNPJ Emitente",
+                    "Razão do Emitente", "Número", "GTIN", "NCM", "Item",
+                    "Descrição do produto", "CFOP", "ICMS destacado", "Código do Produto",
+                    "Cód. Tot. Par", "Legislação", "Valor da Operação", "Alíquota ICMS correta",
+                    "Alíquota ICMS efetiva", "ICMS devido", "ICMS não-recolhido"
+                ]
+            }
+        },
+        # Índice de descrição dos campos
+        "indice_campos": [
+            ("Chave de acesso", "Número da chave de acesso das Notas Fiscais. Não aplicável para ECF."),
+            ("URL", "Link para acessar o documento fiscal (apenas Notas Fiscais)."),
+            ("Tipo Documento", "Fonte da informação: NFe, NFCe ou ECF."),
+            ("Data de emissão", "Data de emissão do documento (Cupom Fiscal: data da Redução Z)."),
+            ("Entrada ou saída", "Indica se a operação é de entrada ou saída."),
+            ("ECF-FAB", "Número de série do Emissor de Cupom Fiscal."),
+            ("GTIN", "Código GTIN da mercadoria."),
+            ("NCM", "Código NCM da mercadoria."),
+            ("No. Nota", "Número da Nota Fiscal."),
+            ("No. Item", "Número do item dentro da Nota Fiscal."),
+            ("Código do produto", "Código do produto declarado pelo contribuinte."),
+            ("Cód. Tot. Par", "Código totalizador (apenas ECF)."),
+            ("ICMS Destacado", "ICMS destacado no documento fiscal pelo contribuinte."),
+            ("Valor da operação", "Base de Cálculo calculada pelo fisco."),
+            ("Alíquota Efetiva Correta", "Alíquota de ICMS considerada pelo fisco."),
+            ("Alíquota Efetiva destacada", "Alíquota efetiva destacada pelo Contribuinte."),
+            ("ICMS devido", "Valor do ICMS considerado como correto pelo fisco."),
+            ("ICMS não-recolhido", "Diferença entre ICMS devido e ICMS destacado.")
+        ]
+    },
+    "GESMAC": {
+        "nome": "GESMAC",
+        "nome_display": "Infrações GESMAC",
+        "descricao": "Sistema de Infrações GESMAC - Receita Estadual SC",
+        # Tabelas (com NFe para GESMAC)
+        "tabelas": {
+            "nfce": "niat.infracoes_gesmac_nfce_3m",
+            "cupons": "niat.infracoes_gesmac_cupons_3m",
+            "nfe": "niat.infracoes_gesmac_nfe_3m"  # GESMAC tem NFe
+        },
+        # Modelos de exportação (2 modelos para GESMAC)
+        "modelos_exportacao": ["NFe", "NFCe + Cupom Fiscal"],
+        # Colunas específicas para export
+        "export_config": {
+            "NFe": {
+                "titulo_aba_dados": "ANEXO NFe - NOTAS DE SAÍDAS",
+                "titulo_aba_icms": "ICMS DEVIDO - NFe",
+                "colunas_header": [
+                    "Data de emissão", "Período", "Tipo Documento", "Chave de acesso",
+                    "Link de Acesso", "ECF-FAB", "Entrada ou saída", "IE Emitente",
+                    "CNPJ Emitente", "Razão do Emitente", "IE Destinatário",
+                    "CNPJ Destinatário", "CPF Destinatário", "Razão do Destinatário",
+                    "Estado do Destinatário", "Regime do Destinatário", "CNAE do Destinatário",
+                    "Número da Nota", "Número do Item", "Origem do Produto", "Ind Final",
+                    "Tipo de Operação Final", "TTD 409/410/411", "GTIN", "NCM",
+                    "Descrição do produto", "CFOP", "Código do Produto", "Valor Total",
+                    "Valor do Frete", "Valor do Seguro", "Valor de Outras Despesas",
+                    "Valor do Desconto", "Cod. Tot. Par", "Alíquota Destacada", "ICMS Destacado",
+                    "Valor da Operação", "Alíquota Efetiva Correta (FISCO)", "Legislação Aplicável",
+                    "Alíquota Efetiva destacada pelo Contribuinte", "ICMS devido", "ICMS não-recolhido"
+                ]
+            },
+            "NFCe + Cupom Fiscal": {
+                "titulo_aba_dados": "ANEXO NFCe+CF - DOCUMENTOS",
+                "titulo_aba_icms": "ICMS DEVIDO - NFCe+CF",
+                "colunas_header": [
+                    "Data de emissão", "Período", "Tipo Documento", "Chave de acesso",
+                    "Link de Acesso", "ECF-FAB", "Entrada ou saída", "IE Emitente",
+                    "CNPJ Emitente", "Razão do Emitente", "IE Destinatário",
+                    "CNPJ Destinatário", "CPF Destinatário", "Razão do Destinatário",
+                    "Estado do Destinatário", "Regime do Destinatário", "CNAE do Destinatário",
+                    "Número da Nota", "Número do Item", "Origem do Produto", "Ind Final",
+                    "Tipo de Operação Final", "TTD 409/410/411", "GTIN", "NCM",
+                    "Descrição do produto", "CFOP", "Código do Produto", "Valor Total",
+                    "Valor do Frete", "Valor do Seguro", "Valor de Outras Despesas",
+                    "Valor do Desconto", "Cod. Tot. Par", "Alíquota Destacada", "ICMS Destacado",
+                    "Valor da Operação", "Alíquota Efetiva Correta (FISCO)", "Legislação Aplicável",
+                    "Alíquota Efetiva destacada pelo Contribuinte", "ICMS devido", "ICMS não-recolhido"
+                ]
+            }
+        },
+        # Índice de descrição dos campos para GESMAC
+        "indice_campos": [
+            ("Chave de acesso", "Indica do número da chave de acesso das Notas Fiscais. Não é aplicável para as informações da ECF."),
+            ("URL", "Link para acessar o documento fiscal (apenas Notas Fiscais)."),
+            ("Tipo Documento", "Indica a fonte da informação. Podia variar entre NFe (Nota Fiscal Eletrônica), NFCe (Nota Fiscal do Consumidor Eletrônica) ou ECF (Emissor de Cupom Fiscal)"),
+            ("Data de emissão", "Data de emissão do documento. (No caso de Cupom Fiscal, é a data da Redução Z)"),
+            ("Entrada ou saída", "Indica se a operação é de entrada ou saída de mercadorias."),
+            ("ECF-FAB", "Indica o número de série do Emissor de Cupom Fiscal (ECF). Não aplicável para operações com Notas Fiscais"),
+            ("GTIN", "Código GTIN da mercadoria."),
+            ("NCM", "Código NCM da mercadoria."),
+            ("No. Nota", "Número da Nota Fiscal. Não é aplicável para informações da ECF."),
+            ("No. Item", "Número do item dentro da Nota Fiscal. Não aplicável a Cupons."),
+            ("Origem do Produto", "Informação de Origem do Produto retirado da Nota Fiscal. Não aplicável a ECF (Cupons) - Indica se o produto é nacional ou estrangeiro."),
+            ("Ind Final e Tipo de Operação Final", "Informação de Ind Final retirado da Nota Fiscal. Não aplicável a ECF (Cupons). Indica se o destinatário receberá o produto para revenda/industrialização ou consumo final."),
+            ("TTD 409/410/411", "Indica se o TTD 409, 410 ou 411 estava ativo para o contribuinte no respectivo período da Nota Fiscal. (Aplicável somente para NFe)"),
+            ("Código do produto", "Código do produto declarado pelo contribuinte para a operação. Válido apenas para Cupons Fiscais"),
+            ("Cód. Tot. Par", "Código totalizador. Informação presente apenas nas operações ECF."),
+            ("Alíquota Destacada", "Alíquota de ICMS destacada no documento fiscal pelo contribuinte"),
+            ("ICMS Destacado", "ICMS destacado no documento fiscal pelo contribuinte"),
+            ("Valor da operação", "Valor da Base de Cálculo calculada pelo fisco, sem considerar reduções da base de cálculo. As reduções da BC serão aplicadas na alíquota efetiva correta. Para as notas fiscais (NF-e e NFC-e inclui frete, seguro, despesas adicionais, descontado os descontos concedidos). Para os Cupons leva-se em conta apenas o valor declarado na EFD que é o valor efetivo da operação."),
+            ("Alíquota Efetiva Correta (FISCO)", "Alíquota de ICMS considerada pelo fisco para a operação. Aqui considerando eventuais reduções da Base de Cálculo. Para os Cupons fiscais é a alíquota retirada do COD TOT PAR."),
+            ("Alíquota Efetiva destacada pelo Contribuinte", "Alíquota efetiva destacada pelo Contribuinte, que é calculada dividindo o ICMS destacado pelo Valor da Operação sem considerar redução da base de cálculo"),
+            ("ICMS devido", "Valor do ICMS considerado como correto pelo fisco."),
+            ("ICMS não-recolhido", "Valor do ICMS a ser recolhido como diferença pelo contribuinte. Trata-se da dedução do valor de 'ICMS devido' pelo valor do campo 'ICMS destacado'")
+        ]
+    }
+}
+
+# Grupo padrão
+GRUPO_PADRAO = "GESSUPER"
+
+
+# =============================================================================
 # 1. CONFIGURAÇÕES INICIAIS
 # =============================================================================
 
@@ -210,14 +349,38 @@ def is_table_unavailable_error(error_msg: str) -> bool:
 TABLE_UNAVAILABLE_MSG = "⚠️ **Tabelas em atualização.** Favor tentar novamente mais tarde."
 
 
-def check_tables_available(engine) -> bool:
+def get_grupo_config(grupo: str = None) -> dict:
     """
-    Verifica se as tabelas principais estão disponíveis.
+    Retorna a configuração do grupo especificado.
+    Se não especificado, usa o grupo do session_state ou o padrão.
+    """
+    if grupo is None:
+        grupo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
+    return GRUPOS_CONFIG.get(grupo, GRUPOS_CONFIG[GRUPO_PADRAO])
+
+
+def get_grupo_tabelas(grupo: str = None) -> dict:
+    """
+    Retorna o dicionário de tabelas para o grupo especificado.
+    """
+    config = get_grupo_config(grupo)
+    return config.get('tabelas', {})
+
+
+def check_tables_available(engine, grupo: str = None) -> bool:
+    """
+    Verifica se as tabelas principais estão disponíveis para o grupo especificado.
     Faz uma query simples (LIMIT 1) para testar a conexão.
     Retorna True se disponíveis, False se indisponíveis.
     """
+    tabelas = get_grupo_tabelas(grupo)
+    tabela_teste = tabelas.get('nfce') or tabelas.get('cupons') or tabelas.get('nfe')
+
+    if not tabela_teste:
+        return False
+
     try:
-        query = "SELECT 1 FROM niat.infracoes_gessuper_nfce_3M LIMIT 1"
+        query = f"SELECT 1 FROM {tabela_teste} LIMIT 1"
         pd.read_sql(query, engine)
         return True
     except Exception as e:
@@ -433,26 +596,34 @@ def get_cfop_descricoes(_engine, cfop_list: list) -> dict:
         return {}
 
 @st.cache_data(ttl=CACHE_TTL_SECONDS, show_spinner="Carregando dados base...")
-def get_base_df(_engine, identificador_digits: str, nivel: str = "BAIXA"):
+def get_base_df(_engine, identificador_digits: str, nivel: str = "BAIXA", grupo: str = None, tipo_doc_filter: str = None):
     """
     Carrega o DataFrame base para o CNPJ/IE informado.
-    Dados de NFC-e e Cupons fiscais (ECF).
-    
+    Suporta múltiplos grupos (GESSUPER, GESMAC, etc.)
+
     Args:
         _engine: Engine de conexão
         identificador_digits: CNPJ ou IE (apenas dígitos)
         nivel: Nível de acurácia (BAIXA, MEDIA, ALTA)
-    
+        grupo: Grupo (GESSUPER, GESMAC). Se None, usa session_state
+        tipo_doc_filter: Filtro opcional por tipo de documento ('NFe', 'NFCe', 'Cupom', None=todos)
+
     As colunas são renomeadas para nomes genéricos:
         - legislacao_X -> legislacao_ia
         - aliquota_X -> aliquota_ia
         - infracao_X -> infracao_ia
-    
+
     Filtra apenas registros onde infracao_X IS NOT NULL e != 'EXCLUIR'
     """
+    # Obtém configuração do grupo
+    if grupo is None:
+        grupo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
+
+    tabelas = get_grupo_tabelas(grupo)
+
     # Define as colunas baseado no nível
     nivel_upper = (nivel or "BAIXA").upper()
-    
+
     if nivel_upper == "ALTA":
         col_legislacao = "legislacao_alta"
         col_aliquota = "aliquota_alta"
@@ -465,76 +636,286 @@ def get_base_df(_engine, identificador_digits: str, nivel: str = "BAIXA"):
         col_legislacao = "legislacao_baixa"
         col_aliquota = "aliquota_baixa"
         col_infracao = "infracao_baixa"
-    
+
     # Filtro para excluir registros NULL ou EXCLUIR (infracao, aliquota e legislacao)
     filtro_nivel = f"""
-        {col_infracao} IS NOT NULL 
+        {col_infracao} IS NOT NULL
         AND CAST({col_infracao} AS STRING) != 'EXCLUIR'
         AND CAST({col_aliquota} AS STRING) != 'EXCLUIR'
         AND CAST({col_legislacao} AS STRING) != 'EXCLUIR'
     """
-    
-    query = f"""
-        SELECT 
-            data_emissao,
-            periodo,
-            tipo_doc,
-            chave,
-            NULL AS link_acesso,
-            NULL AS modelo_ecf,
-            entrada_ou_saida,
-            cnpj_emitente,
-            razao_emitente,
-            numero_nota,
-            gtin,
-            ncm,
-            CAST(numero_item AS STRING) AS numero_item,
-            descricao,
-            CAST(cfop AS STRING) AS cfop,
-            icms_emitente,
-            NULL AS cod_prod,
-            NULL AS cod_tot_par,
-            {col_legislacao} AS legislacao_ia,
-            bc_fisco,
-            {col_aliquota} AS aliquota_ia,
-            NULL AS aliq_efetiva,
-            {col_infracao} AS infracao_ia
-        FROM niat.infracoes_gessuper_nfce_3M
-        WHERE regexp_replace(cnpj_emitente, '[^0-9]', '') = '{identificador_digits}'
-        AND {filtro_nivel}
-        
-        UNION ALL
-        
-        SELECT   
-            data_emissao,
-            periodo,
-            tipo_doc,
-            NULL AS chave,
-            NULL AS link_acesso,
-            modelo_ecf,
-            NULL AS entrada_ou_saida,
-            cnpj_emitente,
-            razao_emitente,
-            NULL AS numero_nota,
-            gtin,
-            ncm,
-            CAST(NULL AS STRING) AS numero_item,
-            descricao,
-            CAST(cfop AS STRING) AS cfop,
-            icms_emitente,
-            cod_prod,
-            cod_tot_par,
-            {col_legislacao} AS legislacao_ia,
-            bc_fisco,
-            {col_aliquota} AS aliquota_ia,
-            NULL AS aliq_efetiva,
-            {col_infracao} AS infracao_ia
-        FROM niat.infracoes_gessuper_cupons_3M
-        WHERE regexp_replace(cnpj_emitente, '[^0-9]', '') = '{identificador_digits}'
-        AND {filtro_nivel}
-    """
+
+    queries = []
+
+    # Query NFCe (comum a GESSUPER e GESMAC)
+    if tabelas.get('nfce') and (tipo_doc_filter is None or tipo_doc_filter == 'NFCe'):
+        if grupo == "GESMAC":
+            query_nfce = f"""
+                SELECT
+                    data_emissao,
+                    periodo,
+                    tipo_doc,
+                    chave,
+                    NULL AS link_acesso,
+                    NULL AS modelo_ecf,
+                    entrada_ou_saida,
+                    ie_emitente,
+                    cnpj_emitente,
+                    razao_emitente,
+                    ie_destinatario,
+                    cnpj_destinatario,
+                    NULL AS cpf_destinatario,
+                    razao_destinatario,
+                    estado_destinatario,
+                    NULL AS uf_entrega,
+                    numero_nota,
+                    numero_item,
+                    origem_prod,
+                    NULL AS ind_final,
+                    NULL AS cod_prod,
+                    gtin,
+                    ncm,
+                    descricao,
+                    CAST(cfop AS STRING) AS cfop,
+                    cst,
+                    valor_total,
+                    valor_do_frete,
+                    valor_do_seguro,
+                    valor_outras_despesas,
+                    valor_do_desconto,
+                    NULL AS cod_tot_par,
+                    aliquota_emitente AS icms_emitente,
+                    icms_emitente AS icms_destacado,
+                    NULL AS regime_destinatario,
+                    cnae_destinatario,
+                    NULL AS ttd_importacao,
+                    bc_fisco,
+                    {col_legislacao} AS legislacao_ia,
+                    {col_aliquota} AS aliquota_ia,
+                    NULL AS aliq_efetiva,
+                    NULL AS icms_devido,
+                    {col_infracao} AS infracao_ia
+                FROM {tabelas['nfce']}
+                WHERE regexp_replace(cnpj_emitente, '[^0-9]', '') = '{identificador_digits}'
+                AND {filtro_nivel}
+            """
+        else:  # GESSUPER
+            query_nfce = f"""
+                SELECT
+                    data_emissao,
+                    periodo,
+                    tipo_doc,
+                    chave,
+                    NULL AS link_acesso,
+                    NULL AS modelo_ecf,
+                    entrada_ou_saida,
+                    NULL AS ie_emitente,
+                    cnpj_emitente,
+                    razao_emitente,
+                    NULL AS ie_destinatario,
+                    NULL AS cnpj_destinatario,
+                    NULL AS cpf_destinatario,
+                    NULL AS razao_destinatario,
+                    NULL AS estado_destinatario,
+                    NULL AS uf_entrega,
+                    numero_nota,
+                    CAST(numero_item AS STRING) AS numero_item,
+                    NULL AS origem_prod,
+                    NULL AS ind_final,
+                    NULL AS cod_prod,
+                    gtin,
+                    ncm,
+                    descricao,
+                    CAST(cfop AS STRING) AS cfop,
+                    NULL AS cst,
+                    NULL AS valor_total,
+                    NULL AS valor_do_frete,
+                    NULL AS valor_do_seguro,
+                    NULL AS valor_outras_despesas,
+                    NULL AS valor_do_desconto,
+                    NULL AS cod_tot_par,
+                    icms_emitente,
+                    NULL AS icms_destacado,
+                    NULL AS regime_destinatario,
+                    NULL AS cnae_destinatario,
+                    NULL AS ttd_importacao,
+                    bc_fisco,
+                    {col_legislacao} AS legislacao_ia,
+                    {col_aliquota} AS aliquota_ia,
+                    NULL AS aliq_efetiva,
+                    NULL AS icms_devido,
+                    {col_infracao} AS infracao_ia
+                FROM {tabelas['nfce']}
+                WHERE regexp_replace(cnpj_emitente, '[^0-9]', '') = '{identificador_digits}'
+                AND {filtro_nivel}
+            """
+        queries.append(query_nfce)
+
+    # Query Cupons (comum a GESSUPER e GESMAC)
+    if tabelas.get('cupons') and (tipo_doc_filter is None or tipo_doc_filter == 'Cupom'):
+        if grupo == "GESMAC":
+            query_cupons = f"""
+                SELECT
+                    data_emissao,
+                    periodo,
+                    tipo_doc,
+                    NULL AS chave,
+                    NULL AS link_acesso,
+                    modelo_ecf,
+                    NULL AS entrada_ou_saida,
+                    ie_emitente,
+                    cnpj_emitente,
+                    razao_emitente,
+                    NULL AS ie_destinatario,
+                    NULL AS cnpj_destinatario,
+                    NULL AS cpf_destinatario,
+                    NULL AS razao_destinatario,
+                    NULL AS estado_destinatario,
+                    NULL AS uf_entrega,
+                    NULL AS numero_nota,
+                    NULL AS numero_item,
+                    NULL AS origem_prod,
+                    NULL AS ind_final,
+                    cod_prod,
+                    gtin,
+                    ncm,
+                    descricao,
+                    CAST(cfop AS STRING) AS cfop,
+                    NULL AS cst,
+                    bc_fisco AS valor_total,
+                    NULL AS valor_do_frete,
+                    NULL AS valor_do_seguro,
+                    NULL AS valor_outras_despesas,
+                    NULL AS valor_do_desconto,
+                    cod_tot_par,
+                    aliquota_emitente AS icms_emitente,
+                    icms_emitente AS icms_destacado,
+                    NULL AS regime_destinatario,
+                    NULL AS cnae_destinatario,
+                    NULL AS ttd_importacao,
+                    bc_fisco,
+                    {col_legislacao} AS legislacao_ia,
+                    {col_aliquota} AS aliquota_ia,
+                    NULL AS aliq_efetiva,
+                    NULL AS icms_devido,
+                    {col_infracao} AS infracao_ia
+                FROM {tabelas['cupons']}
+                WHERE regexp_replace(cnpj_emitente, '[^0-9]', '') = '{identificador_digits}'
+                AND {filtro_nivel}
+            """
+        else:  # GESSUPER
+            query_cupons = f"""
+                SELECT
+                    data_emissao,
+                    periodo,
+                    tipo_doc,
+                    NULL AS chave,
+                    NULL AS link_acesso,
+                    modelo_ecf,
+                    NULL AS entrada_ou_saida,
+                    NULL AS ie_emitente,
+                    cnpj_emitente,
+                    razao_emitente,
+                    NULL AS ie_destinatario,
+                    NULL AS cnpj_destinatario,
+                    NULL AS cpf_destinatario,
+                    NULL AS razao_destinatario,
+                    NULL AS estado_destinatario,
+                    NULL AS uf_entrega,
+                    NULL AS numero_nota,
+                    CAST(NULL AS STRING) AS numero_item,
+                    NULL AS origem_prod,
+                    NULL AS ind_final,
+                    cod_prod,
+                    gtin,
+                    ncm,
+                    descricao,
+                    CAST(cfop AS STRING) AS cfop,
+                    NULL AS cst,
+                    NULL AS valor_total,
+                    NULL AS valor_do_frete,
+                    NULL AS valor_do_seguro,
+                    NULL AS valor_outras_despesas,
+                    NULL AS valor_do_desconto,
+                    cod_tot_par,
+                    icms_emitente,
+                    NULL AS icms_destacado,
+                    NULL AS regime_destinatario,
+                    NULL AS cnae_destinatario,
+                    NULL AS ttd_importacao,
+                    bc_fisco,
+                    {col_legislacao} AS legislacao_ia,
+                    {col_aliquota} AS aliquota_ia,
+                    NULL AS aliq_efetiva,
+                    NULL AS icms_devido,
+                    {col_infracao} AS infracao_ia
+                FROM {tabelas['cupons']}
+                WHERE regexp_replace(cnpj_emitente, '[^0-9]', '') = '{identificador_digits}'
+                AND {filtro_nivel}
+            """
+        queries.append(query_cupons)
+
+    # Query NFe (apenas GESMAC)
+    if tabelas.get('nfe') and (tipo_doc_filter is None or tipo_doc_filter == 'NFe'):
+        query_nfe = f"""
+            SELECT
+                data_emissao,
+                periodo,
+                tipo_doc,
+                chave,
+                NULL AS link_acesso,
+                NULL AS modelo_ecf,
+                entrada_ou_saida,
+                ie_emitente,
+                cnpj_emitente,
+                razao_emitente,
+                ie_destinatario,
+                cnpj_destinatario,
+                NULL AS cpf_destinatario,
+                razao_destinatario,
+                estado_destinatario,
+                uf_entrega,
+                numero_nota,
+                numero_item,
+                origem_prod,
+                ind_final,
+                NULL AS cod_prod,
+                gtin,
+                ncm,
+                descricao,
+                CAST(cfop AS STRING) AS cfop,
+                cst,
+                valor_total,
+                valor_do_frete,
+                valor_do_seguro,
+                valor_outras_despesas,
+                valor_do_desconto,
+                NULL AS cod_tot_par,
+                aliquota_emitente AS icms_emitente,
+                icms_emitente AS icms_destacado,
+                regime_destinatario,
+                cnae_destinatario,
+                ttd_importacao,
+                bc_fisco_red AS bc_fisco,
+                {col_legislacao} AS legislacao_ia,
+                {col_aliquota} AS aliquota_ia,
+                NULL AS aliq_efetiva,
+                NULL AS icms_devido,
+                {col_infracao} AS infracao_ia
+            FROM {tabelas['nfe']}
+            WHERE regexp_replace(cnpj_emitente, '[^0-9]', '') = '{identificador_digits}'
+            AND {filtro_nivel}
+        """
+        queries.append(query_nfe)
+
+    if not queries:
+        return pd.DataFrame()
+
+    # Combina as queries com UNION ALL
+    full_query = " UNION ALL ".join(queries)
+
     try:
-        df = pd.read_sql(query, _engine)
+        df = pd.read_sql(full_query, _engine)
         return df
     except Exception as e:
         error_msg = str(e)
@@ -576,24 +957,47 @@ def calcular_totais(df: pd.DataFrame, nivel_str: str):
     
     return float(total_nivel), cfg, True
 
-def build_export_df(df: pd.DataFrame, nivel_str: str):
+def build_export_df(df: pd.DataFrame, nivel_str: str, grupo: str = None, modelo_export: str = None):
     """
     Monta o DataFrame pronto para exportar.
     A query SQL já traz as colunas renomeadas para nomes genéricos:
         - legislacao_ia, aliquota_ia, infracao_ia
-    
+
     Este método apenas renomeia para o formato final do Excel.
+
+    Args:
+        df: DataFrame com os dados
+        nivel_str: Nível de acurácia
+        grupo: Grupo (GESSUPER, GESMAC). Se None, usa session_state
+        modelo_export: Modelo de exportação para GESMAC ('NFe' ou 'NFCe + Cupom Fiscal')
     """
     cfg = nivel_config(nivel_str)
-    
+
+    if grupo is None:
+        grupo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
+
     if df.empty:
         return None
-    
+
     # Copia o DataFrame
     df_export = df.copy()
-    
+
+    # Filtra por tipo de documento se modelo específico for selecionado (GESMAC)
+    if grupo == "GESMAC" and modelo_export:
+        if modelo_export == "NFe":
+            # Filtra apenas NFe
+            df_export = df_export[df_export['tipo_doc'].str.upper().str.contains('NFE', na=False) &
+                                  ~df_export['tipo_doc'].str.upper().str.contains('NFCE', na=False)]
+        elif modelo_export == "NFCe + Cupom Fiscal":
+            # Filtra NFCe e Cupom
+            df_export = df_export[df_export['tipo_doc'].str.upper().str.contains('NFCE|ECF|CUPOM', regex=True, na=False) |
+                                  ~df_export['tipo_doc'].str.upper().str.contains('NFE', na=False)]
+
+    if df_export.empty:
+        return None
+
     # Verifica qual estrutura de colunas usar (nova ou antiga)
-    if 'infracao_ia' in df.columns:
+    if 'infracao_ia' in df_export.columns:
         # Nova estrutura com colunas genéricas
         df_export['legislacao_ia_icms'] = df_export['legislacao_ia']
         df_export['aliquota_ia_icms'] = df_export['aliquota_ia']
@@ -606,17 +1010,45 @@ def build_export_df(df: pd.DataFrame, nivel_str: str):
         df_export['legislacao_ia_icms'] = df_export[col_legislacao]
         df_export['aliquota_ia_icms'] = df_export[col_aliquota]
         df_export['icms_devido'] = pd.to_numeric(df_export[col_infracao], errors='coerce').fillna(0)
-    
-    # Seleciona colunas para exportação
-    colunas_export = [
-        "data_emissao", "periodo", "tipo_doc", "chave", "link_acesso",
-        "modelo_ecf", "entrada_ou_saida", "cnpj_emitente", "razao_emitente",
-        "numero_nota", "gtin", "ncm", "numero_item", "descricao", "cfop",
-        "icms_emitente", "cod_prod", "cod_tot_par", "legislacao_ia_icms",
-        "bc_fisco", "aliquota_ia_icms", "aliq_efetiva", "icms_devido"
-    ]
-    
-    return df_export[colunas_export]
+
+    # Calcula ICMS não recolhido (ICMS devido - ICMS destacado)
+    if 'icms_destacado' in df_export.columns:
+        icms_destacado = pd.to_numeric(df_export['icms_destacado'], errors='coerce').fillna(0)
+    else:
+        icms_destacado = pd.to_numeric(df_export['icms_emitente'], errors='coerce').fillna(0)
+
+    df_export['icms_nao_recolhido'] = df_export['icms_devido'] - icms_destacado
+    df_export['icms_nao_recolhido'] = df_export['icms_nao_recolhido'].clip(lower=0)  # Não pode ser negativo
+
+    # Define colunas de exportação baseado no grupo
+    if grupo == "GESMAC":
+        # Colunas estendidas para GESMAC (NFe e NFCe + Cupom têm estrutura similar)
+        colunas_export = [
+            "data_emissao", "periodo", "tipo_doc", "chave", "link_acesso",
+            "modelo_ecf", "entrada_ou_saida", "ie_emitente", "cnpj_emitente",
+            "razao_emitente", "ie_destinatario", "cnpj_destinatario",
+            "cpf_destinatario", "razao_destinatario", "estado_destinatario",
+            "regime_destinatario", "cnae_destinatario", "numero_nota", "numero_item",
+            "origem_prod", "ind_final", "ttd_importacao", "gtin", "ncm", "descricao",
+            "cfop", "cod_prod", "valor_total", "valor_do_frete", "valor_do_seguro",
+            "valor_outras_despesas", "valor_do_desconto", "cod_tot_par",
+            "icms_emitente", "icms_destacado", "bc_fisco", "aliquota_ia_icms",
+            "legislacao_ia_icms", "aliq_efetiva", "icms_devido", "icms_nao_recolhido"
+        ]
+    else:
+        # Colunas padrão para GESSUPER
+        colunas_export = [
+            "data_emissao", "periodo", "tipo_doc", "chave", "link_acesso",
+            "modelo_ecf", "entrada_ou_saida", "cnpj_emitente", "razao_emitente",
+            "numero_nota", "gtin", "ncm", "numero_item", "descricao", "cfop",
+            "icms_emitente", "cod_prod", "cod_tot_par", "legislacao_ia_icms",
+            "bc_fisco", "aliquota_ia_icms", "aliq_efetiva", "icms_devido"
+        ]
+
+    # Filtra apenas colunas que existem no DataFrame
+    colunas_existentes = [col for col in colunas_export if col in df_export.columns]
+
+    return df_export[colunas_existentes]
 
 # =============================================================================
 # 6. FUNÇÕES DE EXPORTAÇÃO
@@ -1650,113 +2082,137 @@ def render_analise_exploratoria(df: pd.DataFrame, nivel_str: str, _engine=None):
 # 8. COMPARATIVO ENTRE NÍVEIS
 # =============================================================================
 
-def render_comparativo_niveis(engine, identificador_digits: str, total_rows: int = 0, df_periodos=None):
+def render_comparativo_niveis(engine, identificador_digits: str, total_rows: int = 0, df_periodos=None, grupo: str = None):
     """
     Renderiza comparativo entre os três níveis de acurácia.
-    
+
     Lógica dos níveis (hierarquia inclusiva):
     - BAIXA = todos os registros válidos (100%)
     - MÉDIA = subconjunto de BAIXA (registros mais confiáveis)
     - ALTA = subconjunto de MÉDIA (registros mais confiáveis ainda)
-    
+
     Para calcular valores EXCLUSIVOS (sem sobreposição):
     - ALTA pura = válido em ALTA
     - MÉDIA pura = válido em MÉDIA mas NÃO em ALTA
     - BAIXA pura = válido em BAIXA mas NÃO em MÉDIA
     """
+    if grupo is None:
+        grupo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
+
+    tabelas = get_grupo_tabelas(grupo)
+
     st.markdown("---")
     st.subheader("🎯 Comparativo entre Níveis de Acurácia")
-    
+
     # Verifica se precisa filtrar por período (datasets grandes)
     filtro_periodo = ""
     if total_rows > LARGE_DATASET_THRESHOLD and df_periodos is not None and len(df_periodos) > 0:
         st.warning(f"⚠️ Dataset grande ({total_rows:,} linhas). Exibindo apenas **últimos 12 meses** para melhor performance.")
-        
+
         periodos_ordenados = sorted(
-            df_periodos, 
+            df_periodos,
             key=lambda x: f"{x[3:7]}/{x[0:2]}" if len(str(x)) >= 7 else x,
             reverse=True
         )[:12]
-        
+
         periodos_str = ", ".join([f"'{p}'" for p in periodos_ordenados])
         filtro_periodo = f"AND periodo IN ({periodos_str})"
         st.caption(f"📅 Períodos: {periodos_ordenados[0]} a {periodos_ordenados[-1]}")
-    
+
+    # Filtro base
+    filtro_baixa = f"""
+        regexp_replace(cnpj_emitente, '[^0-9]', '') = '{identificador_digits}'
+        AND CAST(infracao_baixa AS STRING) != 'EXCLUIR'
+        AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
+        AND CAST(legislacao_baixa AS STRING) != 'EXCLUIR'
+        {filtro_periodo}
+    """
+
+    # Monta queries para cada tabela disponível
+    union_parts = []
+    select_cols = """
+        infracao_alta, infracao_media, infracao_baixa,
+        aliquota_alta, aliquota_media, aliquota_baixa,
+        legislacao_alta, legislacao_media, legislacao_baixa,
+        periodo
+    """
+
+    if tabelas.get('nfce'):
+        union_parts.append(f"""
+            SELECT {select_cols}
+            FROM {tabelas['nfce']}
+            WHERE {filtro_baixa}
+        """)
+    if tabelas.get('cupons'):
+        union_parts.append(f"""
+            SELECT {select_cols}
+            FROM {tabelas['cupons']}
+            WHERE {filtro_baixa}
+        """)
+    if tabelas.get('nfe'):
+        union_parts.append(f"""
+            SELECT {select_cols}
+            FROM {tabelas['nfe']}
+            WHERE {filtro_baixa}
+        """)
+
+    if not union_parts:
+        st.warning("Nenhuma tabela disponível para este grupo.")
+        return
+
+    union_query = " UNION ALL ".join(union_parts)
+
     # Query com valores EXCLUSIVOS (sem sobreposição entre níveis)
     query_totais = f"""
-    SELECT 
+    SELECT
         -- ALTA pura: válido em ALTA
-        SUM(CASE WHEN CAST(infracao_alta AS STRING) != 'EXCLUIR' 
-                 AND CAST(aliquota_alta AS STRING) != 'EXCLUIR' 
-                 AND CAST(legislacao_alta AS STRING) != 'EXCLUIR' 
+        SUM(CASE WHEN CAST(infracao_alta AS STRING) != 'EXCLUIR'
+                 AND CAST(aliquota_alta AS STRING) != 'EXCLUIR'
+                 AND CAST(legislacao_alta AS STRING) != 'EXCLUIR'
                  THEN CAST(infracao_baixa AS FLOAT) ELSE 0 END) as total_alta,
-        
+
         -- MÉDIA pura: válido em MÉDIA mas NÃO em ALTA
-        SUM(CASE WHEN (CAST(infracao_media AS STRING) != 'EXCLUIR' 
-                       AND CAST(aliquota_media AS STRING) != 'EXCLUIR' 
+        SUM(CASE WHEN (CAST(infracao_media AS STRING) != 'EXCLUIR'
+                       AND CAST(aliquota_media AS STRING) != 'EXCLUIR'
                        AND CAST(legislacao_media AS STRING) != 'EXCLUIR')
-                  AND (CAST(infracao_alta AS STRING) = 'EXCLUIR' 
-                       OR CAST(aliquota_alta AS STRING) = 'EXCLUIR' 
+                  AND (CAST(infracao_alta AS STRING) = 'EXCLUIR'
+                       OR CAST(aliquota_alta AS STRING) = 'EXCLUIR'
                        OR CAST(legislacao_alta AS STRING) = 'EXCLUIR')
                  THEN CAST(infracao_baixa AS FLOAT) ELSE 0 END) as total_media,
-        
+
         -- BAIXA pura: válido em BAIXA mas NÃO em MÉDIA
-        SUM(CASE WHEN (CAST(infracao_baixa AS STRING) != 'EXCLUIR' 
-                       AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR' 
+        SUM(CASE WHEN (CAST(infracao_baixa AS STRING) != 'EXCLUIR'
+                       AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
                        AND CAST(legislacao_baixa AS STRING) != 'EXCLUIR')
-                  AND (CAST(infracao_media AS STRING) = 'EXCLUIR' 
-                       OR CAST(aliquota_media AS STRING) = 'EXCLUIR' 
+                  AND (CAST(infracao_media AS STRING) = 'EXCLUIR'
+                       OR CAST(aliquota_media AS STRING) = 'EXCLUIR'
                        OR CAST(legislacao_media AS STRING) = 'EXCLUIR')
                  THEN CAST(infracao_baixa AS FLOAT) ELSE 0 END) as total_baixa,
-        
+
         -- Contagens exclusivas
-        SUM(CASE WHEN CAST(infracao_alta AS STRING) != 'EXCLUIR' 
-                 AND CAST(aliquota_alta AS STRING) != 'EXCLUIR' 
-                 AND CAST(legislacao_alta AS STRING) != 'EXCLUIR' 
+        SUM(CASE WHEN CAST(infracao_alta AS STRING) != 'EXCLUIR'
+                 AND CAST(aliquota_alta AS STRING) != 'EXCLUIR'
+                 AND CAST(legislacao_alta AS STRING) != 'EXCLUIR'
                  THEN 1 ELSE 0 END) as qtd_alta,
-        
-        SUM(CASE WHEN (CAST(infracao_media AS STRING) != 'EXCLUIR' 
-                       AND CAST(aliquota_media AS STRING) != 'EXCLUIR' 
+
+        SUM(CASE WHEN (CAST(infracao_media AS STRING) != 'EXCLUIR'
+                       AND CAST(aliquota_media AS STRING) != 'EXCLUIR'
                        AND CAST(legislacao_media AS STRING) != 'EXCLUIR')
-                  AND (CAST(infracao_alta AS STRING) = 'EXCLUIR' 
-                       OR CAST(aliquota_alta AS STRING) = 'EXCLUIR' 
+                  AND (CAST(infracao_alta AS STRING) = 'EXCLUIR'
+                       OR CAST(aliquota_alta AS STRING) = 'EXCLUIR'
                        OR CAST(legislacao_alta AS STRING) = 'EXCLUIR')
                  THEN 1 ELSE 0 END) as qtd_media,
-        
-        SUM(CASE WHEN (CAST(infracao_baixa AS STRING) != 'EXCLUIR' 
-                       AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR' 
+
+        SUM(CASE WHEN (CAST(infracao_baixa AS STRING) != 'EXCLUIR'
+                       AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
                        AND CAST(legislacao_baixa AS STRING) != 'EXCLUIR')
-                  AND (CAST(infracao_media AS STRING) = 'EXCLUIR' 
-                       OR CAST(aliquota_media AS STRING) = 'EXCLUIR' 
+                  AND (CAST(infracao_media AS STRING) = 'EXCLUIR'
+                       OR CAST(aliquota_media AS STRING) = 'EXCLUIR'
                        OR CAST(legislacao_media AS STRING) = 'EXCLUIR')
                  THEN 1 ELSE 0 END) as qtd_baixa
-                 
+
     FROM (
-        SELECT 
-            infracao_alta, infracao_media, infracao_baixa,
-            aliquota_alta, aliquota_media, aliquota_baixa,
-            legislacao_alta, legislacao_media, legislacao_baixa,
-            periodo
-        FROM niat.infracoes_gessuper_nfce_3M 
-        WHERE regexp_replace(cnpj_emitente, '[^0-9]', '') = '{identificador_digits}'
-        AND CAST(infracao_baixa AS STRING) != 'EXCLUIR'
-        AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
-        AND CAST(legislacao_baixa AS STRING) != 'EXCLUIR'
-        {filtro_periodo}
-        
-        UNION ALL
-        
-        SELECT 
-            infracao_alta, infracao_media, infracao_baixa,
-            aliquota_alta, aliquota_media, aliquota_baixa,
-            legislacao_alta, legislacao_media, legislacao_baixa,
-            periodo
-        FROM niat.infracoes_gessuper_cupons_3M 
-        WHERE regexp_replace(cnpj_emitente, '[^0-9]', '') = '{identificador_digits}'
-        AND CAST(infracao_baixa AS STRING) != 'EXCLUIR'
-        AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
-        AND CAST(legislacao_baixa AS STRING) != 'EXCLUIR'
-        {filtro_periodo}
+        {union_query}
     ) t
     """
     
@@ -1892,41 +2348,68 @@ def render_comparativo_niveis(engine, identificador_digits: str, total_rows: int
 # =============================================================================
 
 @st.cache_data(ttl=RANKING_CACHE_TTL, show_spinner=False)
-def get_ranking_data(_engine, nivel: str = "ALTA", top_n: int = 100, _cache_version: int = 8):
+def get_ranking_data(_engine, nivel: str = "ALTA", top_n: int = 100, _cache_version: int = 8, grupo: str = None):
     """
     Busca ranking agregado de empresas por valor de infração.
     Cache de 24 horas pois dados não mudam frequentemente.
     Retorna dados agregados por empresa e por ano.
     _cache_version: incrementar para invalidar cache
-    
+    grupo: grupo (GESSUPER, GESMAC). Se None, usa session_state
+
     """
+    if grupo is None:
+        grupo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
+
+    tabelas = get_grupo_tabelas(grupo)
+
     nivel_upper = (nivel or "ALTA").upper()
     col_infracao = f"infracao_{nivel_upper.lower()}"
     col_aliquota = f"aliquota_{nivel_upper.lower()}"
     col_legislacao = f"legislacao_{nivel_upper.lower()}"
-    
+
+    filtro = f"""
+        {col_infracao} IS NOT NULL
+        AND CAST({col_infracao} AS STRING) != 'EXCLUIR'
+        AND CAST({col_aliquota} AS STRING) != 'EXCLUIR'
+        AND CAST({col_legislacao} AS STRING) != 'EXCLUIR'
+    """
+
+    # Monta queries para cada tabela disponível
+    union_parts = []
+    if tabelas.get('nfce'):
+        union_parts.append(f"""
+            SELECT cnpj_emitente, razao_emitente, periodo, {col_infracao}
+            FROM {tabelas['nfce']}
+            WHERE {filtro}
+        """)
+    if tabelas.get('cupons'):
+        union_parts.append(f"""
+            SELECT cnpj_emitente, razao_emitente, periodo, {col_infracao}
+            FROM {tabelas['cupons']}
+            WHERE {filtro}
+        """)
+    if tabelas.get('nfe'):
+        union_parts.append(f"""
+            SELECT cnpj_emitente, razao_emitente, periodo, {col_infracao}
+            FROM {tabelas['nfe']}
+            WHERE {filtro}
+        """)
+
+    if not union_parts:
+        return None, None, None
+
+    union_query = " UNION ALL ".join(union_parts)
+
     # Query otimizada - agregação no banco de dados
     query = f"""
-    SELECT 
+    SELECT
         cnpj_emitente,
         razao_emitente,
         SUBSTR(periodo, 4, 4) as ano,
         SUM(CAST({col_infracao} AS FLOAT)) as total_valor,
         COUNT(*) as qtd_itens
     FROM (
-        SELECT cnpj_emitente, razao_emitente, periodo, {col_infracao}
-        FROM niat.infracoes_gessuper_nfce_3M 
-        WHERE {col_infracao} IS NOT NULL 
-        AND CAST({col_infracao} AS STRING) != 'EXCLUIR'
-        AND CAST({col_aliquota} AS STRING) != 'EXCLUIR'
-        AND CAST({col_legislacao} AS STRING) != 'EXCLUIR'
-        UNION ALL
-        SELECT cnpj_emitente, razao_emitente, periodo, {col_infracao}
-        FROM niat.infracoes_gessuper_cupons_3M 
-        WHERE {col_infracao} IS NOT NULL 
-        AND CAST({col_infracao} AS STRING) != 'EXCLUIR'
-        AND CAST({col_aliquota} AS STRING) != 'EXCLUIR'
-        AND CAST({col_legislacao} AS STRING) != 'EXCLUIR'
+        {union_query}
     ) t
     GROUP BY cnpj_emitente, razao_emitente, SUBSTR(periodo, 4, 4)
     """
@@ -2035,36 +2518,62 @@ def get_ranking_data(_engine, nivel: str = "ALTA", top_n: int = 100, _cache_vers
 
 
 @st.cache_data(ttl=RANKING_CACHE_TTL, show_spinner=False)
-def get_global_stats(_engine, nivel: str = "ALTA"):
+def get_global_stats(_engine, nivel: str = "ALTA", grupo: str = None):
     """
     Busca estatísticas globais para comparação.
     Cache de 24 horas.
     """
+    if grupo is None:
+        grupo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
+
+    tabelas = get_grupo_tabelas(grupo)
+
     nivel_upper = (nivel or "ALTA").upper()
     col_infracao = f"infracao_{nivel_upper.lower()}"
     col_aliquota = f"aliquota_{nivel_upper.lower()}"
     col_legislacao = f"legislacao_{nivel_upper.lower()}"
-    
+
+    filtro = f"""
+        {col_infracao} IS NOT NULL
+        AND CAST({col_infracao} AS STRING) != 'EXCLUIR'
+        AND CAST({col_aliquota} AS STRING) != 'EXCLUIR'
+        AND CAST({col_legislacao} AS STRING) != 'EXCLUIR'
+    """
+
+    # Monta queries para cada tabela disponível
+    union_parts = []
+    if tabelas.get('nfce'):
+        union_parts.append(f"""
+            SELECT cnpj_emitente, {col_infracao}
+            FROM {tabelas['nfce']}
+            WHERE {filtro}
+        """)
+    if tabelas.get('cupons'):
+        union_parts.append(f"""
+            SELECT cnpj_emitente, {col_infracao}
+            FROM {tabelas['cupons']}
+            WHERE {filtro}
+        """)
+    if tabelas.get('nfe'):
+        union_parts.append(f"""
+            SELECT cnpj_emitente, {col_infracao}
+            FROM {tabelas['nfe']}
+            WHERE {filtro}
+        """)
+
+    if not union_parts:
+        return None
+
+    union_query = " UNION ALL ".join(union_parts)
+
     query = f"""
-    SELECT 
+    SELECT
         COUNT(DISTINCT cnpj_emitente) as total_empresas,
         SUM(CAST({col_infracao} AS FLOAT)) as total_valor,
         COUNT(*) as total_itens,
         AVG(CAST({col_infracao} AS FLOAT)) as media_item
     FROM (
-        SELECT cnpj_emitente, {col_infracao}
-        FROM niat.infracoes_gessuper_nfce_3M 
-        WHERE {col_infracao} IS NOT NULL 
-        AND CAST({col_infracao} AS STRING) != 'EXCLUIR'
-        AND CAST({col_aliquota} AS STRING) != 'EXCLUIR'
-        AND CAST({col_legislacao} AS STRING) != 'EXCLUIR'
-        UNION ALL
-        SELECT cnpj_emitente, {col_infracao}
-        FROM niat.infracoes_gessuper_cupons_3M 
-        WHERE {col_infracao} IS NOT NULL 
-        AND CAST({col_infracao} AS STRING) != 'EXCLUIR'
-        AND CAST({col_aliquota} AS STRING) != 'EXCLUIR'
-        AND CAST({col_legislacao} AS STRING) != 'EXCLUIR'
+        {union_query}
     ) t
     """
     
@@ -2086,96 +2595,119 @@ def get_global_stats(_engine, nivel: str = "ALTA"):
 
 
 @st.cache_data(ttl=RANKING_CACHE_TTL, show_spinner=False)
-def get_ranking_acuracia(_engine, top_n: int = 100, _cache_version: int = 6):
+def get_ranking_acuracia(_engine, top_n: int = 100, _cache_version: int = 6, grupo: str = None):
     """
     Busca ranking de empresas por qualidade de acurácia.
     Ordena por: maior % ALTA, depois % MÉDIA, depois % BAIXA, depois valor total.
     Cache de 24 horas.
-    
+
     Lógica dos níveis (hierarquia inclusiva):
     - BAIXA = todos os registros válidos
     - MÉDIA = subconjunto de BAIXA (registros mais confiáveis)
     - ALTA = subconjunto de MÉDIA (registros mais confiáveis ainda)
-    
+
     Para calcular valores EXCLUSIVOS:
     - ALTA pura = válido em ALTA
     - MÉDIA pura = válido em MÉDIA mas NÃO em ALTA
     - BAIXA pura = válido em BAIXA mas NÃO em MÉDIA
     """
-    
-    query = """
-    SELECT 
+    if grupo is None:
+        grupo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
+
+    tabelas = get_grupo_tabelas(grupo)
+
+    filtro_baixa = """
+        CAST(infracao_baixa AS STRING) != 'EXCLUIR'
+        AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
+        AND CAST(legislacao_baixa AS STRING) != 'EXCLUIR'
+    """
+
+    # Monta queries para cada tabela disponível
+    union_parts = []
+    select_cols = """
+        cnpj_emitente, razao_emitente,
+        infracao_alta, infracao_media, infracao_baixa,
+        aliquota_alta, aliquota_media, aliquota_baixa,
+        legislacao_alta, legislacao_media, legislacao_baixa
+    """
+
+    if tabelas.get('nfce'):
+        union_parts.append(f"""
+            SELECT {select_cols}
+            FROM {tabelas['nfce']}
+            WHERE {filtro_baixa}
+        """)
+    if tabelas.get('cupons'):
+        union_parts.append(f"""
+            SELECT {select_cols}
+            FROM {tabelas['cupons']}
+            WHERE {filtro_baixa}
+        """)
+    if tabelas.get('nfe'):
+        union_parts.append(f"""
+            SELECT {select_cols}
+            FROM {tabelas['nfe']}
+            WHERE {filtro_baixa}
+        """)
+
+    if not union_parts:
+        return None
+
+    union_query = " UNION ALL ".join(union_parts)
+
+    query = f"""
+    SELECT
         cnpj_emitente,
         razao_emitente,
-        
+
         -- ALTA pura: válido em ALTA (usa infracao_baixa como valor base)
-        SUM(CASE WHEN CAST(infracao_alta AS STRING) != 'EXCLUIR' 
-                 AND CAST(aliquota_alta AS STRING) != 'EXCLUIR' 
-                 AND CAST(legislacao_alta AS STRING) != 'EXCLUIR' 
+        SUM(CASE WHEN CAST(infracao_alta AS STRING) != 'EXCLUIR'
+                 AND CAST(aliquota_alta AS STRING) != 'EXCLUIR'
+                 AND CAST(legislacao_alta AS STRING) != 'EXCLUIR'
                  THEN CAST(infracao_baixa AS FLOAT) ELSE 0 END) as total_alta,
-        
+
         -- MÉDIA pura: válido em MÉDIA mas NÃO em ALTA
-        SUM(CASE WHEN (CAST(infracao_media AS STRING) != 'EXCLUIR' 
-                       AND CAST(aliquota_media AS STRING) != 'EXCLUIR' 
+        SUM(CASE WHEN (CAST(infracao_media AS STRING) != 'EXCLUIR'
+                       AND CAST(aliquota_media AS STRING) != 'EXCLUIR'
                        AND CAST(legislacao_media AS STRING) != 'EXCLUIR')
-                  AND (CAST(infracao_alta AS STRING) = 'EXCLUIR' 
-                       OR CAST(aliquota_alta AS STRING) = 'EXCLUIR' 
+                  AND (CAST(infracao_alta AS STRING) = 'EXCLUIR'
+                       OR CAST(aliquota_alta AS STRING) = 'EXCLUIR'
                        OR CAST(legislacao_alta AS STRING) = 'EXCLUIR')
                  THEN CAST(infracao_baixa AS FLOAT) ELSE 0 END) as total_media,
-        
+
         -- BAIXA pura: válido em BAIXA mas NÃO em MÉDIA
-        SUM(CASE WHEN (CAST(infracao_baixa AS STRING) != 'EXCLUIR' 
-                       AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR' 
+        SUM(CASE WHEN (CAST(infracao_baixa AS STRING) != 'EXCLUIR'
+                       AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
                        AND CAST(legislacao_baixa AS STRING) != 'EXCLUIR')
-                  AND (CAST(infracao_media AS STRING) = 'EXCLUIR' 
-                       OR CAST(aliquota_media AS STRING) = 'EXCLUIR' 
+                  AND (CAST(infracao_media AS STRING) = 'EXCLUIR'
+                       OR CAST(aliquota_media AS STRING) = 'EXCLUIR'
                        OR CAST(legislacao_media AS STRING) = 'EXCLUIR')
                  THEN CAST(infracao_baixa AS FLOAT) ELSE 0 END) as total_baixa,
-        
+
         -- Contagens para referência
-        SUM(CASE WHEN CAST(infracao_alta AS STRING) != 'EXCLUIR' 
-                 AND CAST(aliquota_alta AS STRING) != 'EXCLUIR' 
-                 AND CAST(legislacao_alta AS STRING) != 'EXCLUIR' 
+        SUM(CASE WHEN CAST(infracao_alta AS STRING) != 'EXCLUIR'
+                 AND CAST(aliquota_alta AS STRING) != 'EXCLUIR'
+                 AND CAST(legislacao_alta AS STRING) != 'EXCLUIR'
                  THEN 1 ELSE 0 END) as qtd_alta,
-        
-        SUM(CASE WHEN (CAST(infracao_media AS STRING) != 'EXCLUIR' 
-                       AND CAST(aliquota_media AS STRING) != 'EXCLUIR' 
+
+        SUM(CASE WHEN (CAST(infracao_media AS STRING) != 'EXCLUIR'
+                       AND CAST(aliquota_media AS STRING) != 'EXCLUIR'
                        AND CAST(legislacao_media AS STRING) != 'EXCLUIR')
-                  AND (CAST(infracao_alta AS STRING) = 'EXCLUIR' 
-                       OR CAST(aliquota_alta AS STRING) = 'EXCLUIR' 
+                  AND (CAST(infracao_alta AS STRING) = 'EXCLUIR'
+                       OR CAST(aliquota_alta AS STRING) = 'EXCLUIR'
                        OR CAST(legislacao_alta AS STRING) = 'EXCLUIR')
                  THEN 1 ELSE 0 END) as qtd_media,
-        
-        SUM(CASE WHEN (CAST(infracao_baixa AS STRING) != 'EXCLUIR' 
-                       AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR' 
+
+        SUM(CASE WHEN (CAST(infracao_baixa AS STRING) != 'EXCLUIR'
+                       AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
                        AND CAST(legislacao_baixa AS STRING) != 'EXCLUIR')
-                  AND (CAST(infracao_media AS STRING) = 'EXCLUIR' 
-                       OR CAST(aliquota_media AS STRING) = 'EXCLUIR' 
+                  AND (CAST(infracao_media AS STRING) = 'EXCLUIR'
+                       OR CAST(aliquota_media AS STRING) = 'EXCLUIR'
                        OR CAST(legislacao_media AS STRING) = 'EXCLUIR')
                  THEN 1 ELSE 0 END) as qtd_baixa
-                 
+
     FROM (
-        SELECT 
-            cnpj_emitente, razao_emitente,
-            infracao_alta, infracao_media, infracao_baixa,
-            aliquota_alta, aliquota_media, aliquota_baixa,
-            legislacao_alta, legislacao_media, legislacao_baixa
-        FROM niat.infracoes_gessuper_nfce_3M
-        WHERE CAST(infracao_baixa AS STRING) != 'EXCLUIR'
-          AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
-          AND CAST(legislacao_baixa AS STRING) != 'EXCLUIR'
-        
-        UNION ALL
-        
-        SELECT 
-            cnpj_emitente, razao_emitente,
-            infracao_alta, infracao_media, infracao_baixa,
-            aliquota_alta, aliquota_media, aliquota_baixa,
-            legislacao_alta, legislacao_media, legislacao_baixa
-        FROM niat.infracoes_gessuper_cupons_3M
-        WHERE CAST(infracao_baixa AS STRING) != 'EXCLUIR'
-          AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
-          AND CAST(legislacao_baixa AS STRING) != 'EXCLUIR'
+        {union_query}
     ) t
     GROUP BY cnpj_emitente, razao_emitente
     """
@@ -2219,81 +2751,105 @@ def get_ranking_acuracia(_engine, top_n: int = 100, _cache_version: int = 6):
 
 
 @st.cache_data(ttl=RANKING_CACHE_TTL, show_spinner=False)
-def get_stats_acuracia_geral(_engine, _cache_version: int = 1):
+def get_stats_acuracia_geral(_engine, _cache_version: int = 1, grupo: str = None):
     """
     Busca estatísticas gerais de acurácia (totais por nível).
     Retorna valor e quantidade para cada nível (ALTA, MÉDIA, BAIXA) com valores exclusivos.
     Cache de 24 horas.
     """
-    
-    query = """
-    SELECT 
+    if grupo is None:
+        grupo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
+
+    tabelas = get_grupo_tabelas(grupo)
+
+    filtro_baixa = """
+        CAST(infracao_baixa AS STRING) != 'EXCLUIR'
+        AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
+        AND CAST(legislacao_baixa AS STRING) != 'EXCLUIR'
+    """
+
+    # Monta queries para cada tabela disponível
+    union_parts = []
+    select_cols = """
+        infracao_alta, infracao_media, infracao_baixa,
+        aliquota_alta, aliquota_media, aliquota_baixa,
+        legislacao_alta, legislacao_media, legislacao_baixa
+    """
+
+    if tabelas.get('nfce'):
+        union_parts.append(f"""
+            SELECT {select_cols}
+            FROM {tabelas['nfce']}
+            WHERE {filtro_baixa}
+        """)
+    if tabelas.get('cupons'):
+        union_parts.append(f"""
+            SELECT {select_cols}
+            FROM {tabelas['cupons']}
+            WHERE {filtro_baixa}
+        """)
+    if tabelas.get('nfe'):
+        union_parts.append(f"""
+            SELECT {select_cols}
+            FROM {tabelas['nfe']}
+            WHERE {filtro_baixa}
+        """)
+
+    if not union_parts:
+        return None
+
+    union_query = " UNION ALL ".join(union_parts)
+
+    query = f"""
+    SELECT
         -- ALTA pura: válido em ALTA
-        SUM(CASE WHEN CAST(infracao_alta AS STRING) != 'EXCLUIR' 
-                 AND CAST(aliquota_alta AS STRING) != 'EXCLUIR' 
-                 AND CAST(legislacao_alta AS STRING) != 'EXCLUIR' 
+        SUM(CASE WHEN CAST(infracao_alta AS STRING) != 'EXCLUIR'
+                 AND CAST(aliquota_alta AS STRING) != 'EXCLUIR'
+                 AND CAST(legislacao_alta AS STRING) != 'EXCLUIR'
                  THEN CAST(infracao_baixa AS FLOAT) ELSE 0 END) as valor_alta,
-        
+
         -- MÉDIA pura: válido em MÉDIA mas NÃO em ALTA
-        SUM(CASE WHEN (CAST(infracao_media AS STRING) != 'EXCLUIR' 
-                       AND CAST(aliquota_media AS STRING) != 'EXCLUIR' 
+        SUM(CASE WHEN (CAST(infracao_media AS STRING) != 'EXCLUIR'
+                       AND CAST(aliquota_media AS STRING) != 'EXCLUIR'
                        AND CAST(legislacao_media AS STRING) != 'EXCLUIR')
-                  AND (CAST(infracao_alta AS STRING) = 'EXCLUIR' 
-                       OR CAST(aliquota_alta AS STRING) = 'EXCLUIR' 
+                  AND (CAST(infracao_alta AS STRING) = 'EXCLUIR'
+                       OR CAST(aliquota_alta AS STRING) = 'EXCLUIR'
                        OR CAST(legislacao_alta AS STRING) = 'EXCLUIR')
                  THEN CAST(infracao_baixa AS FLOAT) ELSE 0 END) as valor_media,
-        
+
         -- BAIXA pura: válido em BAIXA mas NÃO em MÉDIA
-        SUM(CASE WHEN (CAST(infracao_baixa AS STRING) != 'EXCLUIR' 
-                       AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR' 
+        SUM(CASE WHEN (CAST(infracao_baixa AS STRING) != 'EXCLUIR'
+                       AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
                        AND CAST(legislacao_baixa AS STRING) != 'EXCLUIR')
-                  AND (CAST(infracao_media AS STRING) = 'EXCLUIR' 
-                       OR CAST(aliquota_media AS STRING) = 'EXCLUIR' 
+                  AND (CAST(infracao_media AS STRING) = 'EXCLUIR'
+                       OR CAST(aliquota_media AS STRING) = 'EXCLUIR'
                        OR CAST(legislacao_media AS STRING) = 'EXCLUIR')
                  THEN CAST(infracao_baixa AS FLOAT) ELSE 0 END) as valor_baixa,
-        
+
         -- Contagens exclusivas
-        SUM(CASE WHEN CAST(infracao_alta AS STRING) != 'EXCLUIR' 
-                 AND CAST(aliquota_alta AS STRING) != 'EXCLUIR' 
-                 AND CAST(legislacao_alta AS STRING) != 'EXCLUIR' 
+        SUM(CASE WHEN CAST(infracao_alta AS STRING) != 'EXCLUIR'
+                 AND CAST(aliquota_alta AS STRING) != 'EXCLUIR'
+                 AND CAST(legislacao_alta AS STRING) != 'EXCLUIR'
                  THEN 1 ELSE 0 END) as qtd_alta,
-        
-        SUM(CASE WHEN (CAST(infracao_media AS STRING) != 'EXCLUIR' 
-                       AND CAST(aliquota_media AS STRING) != 'EXCLUIR' 
+
+        SUM(CASE WHEN (CAST(infracao_media AS STRING) != 'EXCLUIR'
+                       AND CAST(aliquota_media AS STRING) != 'EXCLUIR'
                        AND CAST(legislacao_media AS STRING) != 'EXCLUIR')
-                  AND (CAST(infracao_alta AS STRING) = 'EXCLUIR' 
-                       OR CAST(aliquota_alta AS STRING) = 'EXCLUIR' 
+                  AND (CAST(infracao_alta AS STRING) = 'EXCLUIR'
+                       OR CAST(aliquota_alta AS STRING) = 'EXCLUIR'
                        OR CAST(legislacao_alta AS STRING) = 'EXCLUIR')
                  THEN 1 ELSE 0 END) as qtd_media,
-        
-        SUM(CASE WHEN (CAST(infracao_baixa AS STRING) != 'EXCLUIR' 
-                       AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR' 
+
+        SUM(CASE WHEN (CAST(infracao_baixa AS STRING) != 'EXCLUIR'
+                       AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
                        AND CAST(legislacao_baixa AS STRING) != 'EXCLUIR')
-                  AND (CAST(infracao_media AS STRING) = 'EXCLUIR' 
-                       OR CAST(aliquota_media AS STRING) = 'EXCLUIR' 
+                  AND (CAST(infracao_media AS STRING) = 'EXCLUIR'
+                       OR CAST(aliquota_media AS STRING) = 'EXCLUIR'
                        OR CAST(legislacao_media AS STRING) = 'EXCLUIR')
                  THEN 1 ELSE 0 END) as qtd_baixa
-                 
+
     FROM (
-        SELECT 
-            infracao_alta, infracao_media, infracao_baixa,
-            aliquota_alta, aliquota_media, aliquota_baixa,
-            legislacao_alta, legislacao_media, legislacao_baixa
-        FROM niat.infracoes_gessuper_nfce_3M
-        WHERE CAST(infracao_baixa AS STRING) != 'EXCLUIR'
-          AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
-          AND CAST(legislacao_baixa AS STRING) != 'EXCLUIR'
-        
-        UNION ALL
-        
-        SELECT 
-            infracao_alta, infracao_media, infracao_baixa,
-            aliquota_alta, aliquota_media, aliquota_baixa,
-            legislacao_alta, legislacao_media, legislacao_baixa
-        FROM niat.infracoes_gessuper_cupons_3M
-        WHERE CAST(infracao_baixa AS STRING) != 'EXCLUIR'
-          AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
-          AND CAST(legislacao_baixa AS STRING) != 'EXCLUIR'
+        {union_query}
     ) t
     """
     
@@ -3028,42 +3584,111 @@ def render_ranking(engine, nivel: str = "ALTA"):
 # 9. PESQUISA DE PRODUTOS
 # =============================================================================
 
-def search_products_by_description(_engine, search_term: str, limit: int = 1000):
+def search_products_by_description(_engine, search_term: str, limit: int = 1000, grupo: str = None):
     """
     Busca produtos por descrição.
     Retorna DataFrame com produtos, empresas, alíquotas, NCM, CFOP, etc.
     Query simplificada sem GROUP BY para melhor performance.
+    Suporta múltiplos grupos.
     """
+    if grupo is None:
+        grupo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
+
+    tabelas = get_grupo_tabelas(grupo)
+
     # Escapa aspas simples e converte para minúsculas
     search_term_safe = search_term.replace("'", "''").lower()
-    
-    query = f"""
-    SELECT 
-        descricao,
-        ncm,
-        gtin,
-        cfop,
-        cnpj_emitente,
-        razao_emitente,
-        icms_emitente as aliquota_emitente,
-        aliquota_alta as aliquota_ia_alta,
-        aliquota_media as aliquota_ia_media,
-        aliquota_baixa as aliquota_ia_baixa,
-        infracao_alta,
-        infracao_media,
-        infracao_baixa,
-        legislacao_alta,
-        legislacao_media,
-        legislacao_baixa,
-        periodo,
-        'NFC-e' as tipo_doc
-    FROM niat.infracoes_gessuper_nfce_3M
-    WHERE LOWER(descricao) LIKE '%{search_term_safe}%'
-    AND CAST(infracao_baixa AS STRING) != 'EXCLUIR'
-    AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
-    LIMIT {limit}
+
+    filtro = f"""
+        LOWER(descricao) LIKE '%{search_term_safe}%'
+        AND CAST(infracao_baixa AS STRING) != 'EXCLUIR'
+        AND CAST(aliquota_baixa AS STRING) != 'EXCLUIR'
     """
-    
+
+    # Monta queries para cada tabela disponível
+    union_parts = []
+
+    if tabelas.get('nfce'):
+        union_parts.append(f"""
+            SELECT
+                descricao,
+                ncm,
+                gtin,
+                CAST(cfop AS STRING) AS cfop,
+                cnpj_emitente,
+                razao_emitente,
+                icms_emitente as aliquota_emitente,
+                aliquota_alta as aliquota_ia_alta,
+                aliquota_media as aliquota_ia_media,
+                aliquota_baixa as aliquota_ia_baixa,
+                infracao_alta,
+                infracao_media,
+                infracao_baixa,
+                legislacao_alta,
+                legislacao_media,
+                legislacao_baixa,
+                periodo,
+                'NFC-e' as tipo_doc
+            FROM {tabelas['nfce']}
+            WHERE {filtro}
+        """)
+
+    if tabelas.get('cupons'):
+        union_parts.append(f"""
+            SELECT
+                descricao,
+                ncm,
+                gtin,
+                CAST(cfop AS STRING) AS cfop,
+                cnpj_emitente,
+                razao_emitente,
+                icms_emitente as aliquota_emitente,
+                aliquota_alta as aliquota_ia_alta,
+                aliquota_media as aliquota_ia_media,
+                aliquota_baixa as aliquota_ia_baixa,
+                infracao_alta,
+                infracao_media,
+                infracao_baixa,
+                legislacao_alta,
+                legislacao_media,
+                legislacao_baixa,
+                periodo,
+                'Cupom' as tipo_doc
+            FROM {tabelas['cupons']}
+            WHERE {filtro}
+        """)
+
+    if tabelas.get('nfe'):
+        union_parts.append(f"""
+            SELECT
+                descricao,
+                ncm,
+                gtin,
+                CAST(cfop AS STRING) AS cfop,
+                cnpj_emitente,
+                razao_emitente,
+                aliquota_emitente as aliquota_emitente,
+                aliquota_alta as aliquota_ia_alta,
+                aliquota_media as aliquota_ia_media,
+                aliquota_baixa as aliquota_ia_baixa,
+                infracao_alta,
+                infracao_media,
+                infracao_baixa,
+                legislacao_alta,
+                legislacao_media,
+                legislacao_baixa,
+                periodo,
+                'NF-e' as tipo_doc
+            FROM {tabelas['nfe']}
+            WHERE {filtro}
+        """)
+
+    if not union_parts:
+        return pd.DataFrame()
+
+    union_query = " UNION ALL ".join(union_parts)
+    query = f"{union_query} LIMIT {limit}"
+
     try:
         df = pd.read_sql(query, _engine)
         return df
@@ -3451,7 +4076,11 @@ def main():
     # Variável de controle para navegação (separada do widget)
     if 'nav_page' not in st.session_state:
         st.session_state.nav_page = "ranking"  # Default: ranking
-    
+
+    # Grupo selecionado (GESSUPER, GESMAC, etc.)
+    if 'grupo_selecionado' not in st.session_state:
+        st.session_state.grupo_selecionado = GRUPO_PADRAO
+
     engine = get_engine()
     if engine is None:
         st.stop()
@@ -3496,13 +4125,45 @@ def main():
     # =========================================================================
     
     with st.sidebar:
-        st.markdown("""
+        # Obtém configuração do grupo atual
+        grupo_atual = st.session_state.grupo_selecionado
+        grupo_config = get_grupo_config(grupo_atual)
+
+        st.markdown(f"""
         <div style='text-align: center; padding: 0.5rem 0; border-bottom: 2px solid #1565C0; margin-bottom: 1rem;'>
             <h2 style='color: #1565C0; margin: 0;'>🎯 ARGOS</h2>
-            <p style='color: #666; margin: 0; font-size: 0.8rem;'>Infrações GESSUPER</p>
+            <p style='color: #666; margin: 0; font-size: 0.8rem;'>{grupo_config['nome_display']}</p>
         </div>
         """, unsafe_allow_html=True)
-        
+
+        # Seletor de grupo
+        st.markdown("### 🏢 Grupo")
+        grupos_disponiveis = list(GRUPOS_CONFIG.keys())
+        grupo_idx = grupos_disponiveis.index(grupo_atual) if grupo_atual in grupos_disponiveis else 0
+
+        novo_grupo = st.selectbox(
+            "Selecione o grupo",
+            options=grupos_disponiveis,
+            index=grupo_idx,
+            key="grupo_selector",
+            label_visibility="collapsed"
+        )
+
+        # Atualiza o grupo selecionado se mudou
+        if novo_grupo != grupo_atual:
+            st.session_state.grupo_selecionado = novo_grupo
+            # Limpa dados da consulta anterior ao trocar de grupo
+            st.session_state.consulta_dados = None
+            # Limpa caches específicos do grupo
+            keys_to_clear = [k for k in st.session_state.keys()
+                           if k.startswith(('excel_data_', 'analise_agg_'))]
+            for key in keys_to_clear:
+                del st.session_state[key]
+            st.cache_data.clear()
+            st.rerun()
+
+        st.markdown("---")
+
         # Informações sobre os níveis de acurácia
         st.markdown("### 📊 Níveis de Acurácia")
         
@@ -3558,13 +4219,16 @@ def main():
     # EXIBE CONTEÚDO
     # =========================================================================
     
+    # Obtém configuração do grupo para uso na página principal
+    grupo_cfg_main = get_grupo_config()
+
     if st.session_state.consulta_dados is None:
         # Header compacto com botões de navegação
         col_title, col_btn1, col_btn2 = st.columns([3, 1, 1])
         with col_title:
-            st.markdown("""
+            st.markdown(f"""
             <h2 style='color: #1565C0; margin: 0;'>🎯 Operação ARGOS</h2>
-            <p style='color: #666; margin: 0; font-size: 0.9rem;'>Sistema de Infrações GESSUPER - Receita Estadual SC</p>
+            <p style='color: #666; margin: 0; font-size: 0.9rem;'>{grupo_cfg_main['descricao']}</p>
             """, unsafe_allow_html=True)
         with col_btn1:
             if st.button("🏆 Ranking", use_container_width=True, type="secondary"):
@@ -3845,8 +4509,25 @@ def main():
         # TAB 2: EXPORTAR
         # -----------------------------------------------------------------
         with tab_exportar:
-            df_export = build_export_df(df, nivel_atual)
-            
+            # Obtém grupo atual para determinar modelos de exportação
+            grupo_export = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
+            grupo_cfg_export = get_grupo_config(grupo_export)
+            modelos_export = grupo_cfg_export.get('modelos_exportacao', ['Anexo J'])
+
+            # Seletor de modelo para grupos com múltiplos modelos (ex: GESMAC)
+            modelo_selecionado = None
+            if len(modelos_export) > 1:
+                st.markdown("### 📋 Modelo de Exportação")
+                modelo_selecionado = st.selectbox(
+                    "Selecione o modelo de exportação",
+                    options=modelos_export,
+                    key="modelo_export_selector",
+                    help="Selecione o tipo de documento para exportar"
+                )
+                st.markdown("---")
+
+            df_export = build_export_df(df, nivel_atual, grupo=grupo_export, modelo_export=modelo_selecionado)
+
             if df_export is not None and not df_export.empty:
                 total_rows = len(df_export)
                 needs_split = total_rows > MAX_ROWS_PER_EXCEL
