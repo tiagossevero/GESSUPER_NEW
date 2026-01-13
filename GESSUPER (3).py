@@ -39,11 +39,9 @@ import concurrent.futures
 # Para salvar na rede
 try:
     import smbclient
-    from smbclient import register_session
     SMB_AVAILABLE = True
 except ImportError:
     SMB_AVAILABLE = False
-    register_session = None
 
 # Limite de linhas por arquivo Excel (Excel suporta 1.048.576, usamos 1.000.000 para segurança)
 MAX_ROWS_PER_EXCEL = 1000000
@@ -324,23 +322,6 @@ except:
     ```
     """)
     st.stop()
-
-# Configuração das credenciais SMB para salvar na rede
-SMB_CONFIGURED = False
-SMB_SERVER = "sef.sc.gov.br"  # Servidor extraído de REDE_PATH
-if SMB_AVAILABLE and register_session is not None:
-    try:
-        SMB_USER = st.secrets["smb_credentials"]["username"]
-        SMB_PASSWORD = st.secrets["smb_credentials"]["password"]
-        # Registra a sessão com credenciais para o servidor de rede
-        register_session(SMB_SERVER, username=SMB_USER, password=SMB_PASSWORD)
-        SMB_CONFIGURED = True
-    except KeyError:
-        # Credenciais SMB não configuradas - tentará usar Kerberos
-        SMB_CONFIGURED = False
-    except Exception as e:
-        # Erro ao configurar SMB
-        SMB_CONFIGURED = False
 
 # =============================================================================
 # 3. FUNÇÕES AUXILIARES
@@ -1716,11 +1697,9 @@ def save_to_network_fast(df: pd.DataFrame, contrib_info: dict, nivel: str, progr
     
     except Exception as e:
         error_msg = str(e)
-        # Detecta erro de autenticação
-        if "Ticket expired" in error_msg or "SpnegoError" in error_msg or "authenticate" in error_msg.lower() or "STATUS_LOGON_FAILURE" in error_msg:
-            if not SMB_CONFIGURED:
-                return False, "🔐 **Credenciais SMB não configuradas!** Adicione [smb_credentials] no secrets.toml", file_paths, REDE_PATH
-            return False, "🔐 **Erro de autenticação na rede!** Verifique usuário/senha em [smb_credentials] no secrets.toml", file_paths, REDE_PATH
+        # Detecta erro de autenticação Kerberos expirada
+        if "Ticket expired" in error_msg or "SpnegoError" in error_msg or "authenticate" in error_msg.lower():
+            return False, "🔐 **Sessão de rede expirada!** Faça logout/login no Windows ou acesse qualquer pasta de rede no Explorer para renovar.", file_paths, REDE_PATH
         return False, f"Erro ao salvar: {error_msg}", file_paths, REDE_PATH
 
 def save_csv_to_network(df: pd.DataFrame, contrib_info: dict, nivel: str) -> tuple:
@@ -1750,11 +1729,9 @@ def save_csv_to_network(df: pd.DataFrame, contrib_info: dict, nivel: str) -> tup
     
     except Exception as e:
         error_msg = str(e)
-        # Detecta erro de autenticação
-        if "Ticket expired" in error_msg or "SpnegoError" in error_msg or "authenticate" in error_msg.lower() or "STATUS_LOGON_FAILURE" in error_msg:
-            if not SMB_CONFIGURED:
-                return False, "🔐 **Credenciais SMB não configuradas!** Adicione [smb_credentials] no secrets.toml", None, REDE_PATH
-            return False, "🔐 **Erro de autenticação na rede!** Verifique usuário/senha em [smb_credentials] no secrets.toml", None, REDE_PATH
+        # Detecta erro de autenticação Kerberos expirada
+        if "Ticket expired" in error_msg or "SpnegoError" in error_msg or "authenticate" in error_msg.lower():
+            return False, "🔐 **Sessão de rede expirada!** Faça logout/login no Windows ou acesse qualquer pasta de rede no Explorer para renovar.", None, REDE_PATH
         return False, f"Erro ao salvar CSV: {error_msg}", None, REDE_PATH
 
 def save_to_network(df: pd.DataFrame, contrib_info: dict, nivel: str, progress_callback=None) -> tuple:
@@ -1838,11 +1815,9 @@ def save_to_network(df: pd.DataFrame, contrib_info: dict, nivel: str, progress_c
     
     except Exception as e:
         error_msg = str(e)
-        # Detecta erro de autenticação
-        if "Ticket expired" in error_msg or "SpnegoError" in error_msg or "authenticate" in error_msg.lower() or "STATUS_LOGON_FAILURE" in error_msg:
-            if not SMB_CONFIGURED:
-                return False, "🔐 **Credenciais SMB não configuradas!** Adicione [smb_credentials] no secrets.toml", file_paths
-            return False, "🔐 **Erro de autenticação na rede!** Verifique usuário/senha em [smb_credentials] no secrets.toml", file_paths
+        # Detecta erro de autenticação Kerberos expirada
+        if "Ticket expired" in error_msg or "SpnegoError" in error_msg or "authenticate" in error_msg.lower():
+            return False, "🔐 **Sessão de rede expirada!** Faça logout/login no Windows ou acesse qualquer pasta de rede no Explorer para renovar.", file_paths
         return False, f"Erro ao salvar: {error_msg}", file_paths
 
 # =============================================================================
