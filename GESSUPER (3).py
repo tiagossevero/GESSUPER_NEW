@@ -4321,30 +4321,6 @@ def render_ranking_tab(engine, grupo: str):
     # TABELA DO RANKING
     st.markdown("### 🏅 Top 100 Empresas")
 
-    col_ordem, col_info = st.columns([1, 5])
-
-    with col_ordem:
-        opcoes_ordenacao = ["TOTAL"] + anos_cols
-        ano_selecionado = st.selectbox(
-            "Ordenação",
-            options=opcoes_ordenacao,
-            format_func=lambda x: f"📊 TOTAL" if x == "TOTAL" else f"📅 {x}",
-            key=f"ranking_ordenar_por_{grupo}",
-            label_visibility="collapsed"
-        )
-
-    with col_info:
-        if ano_selecionado == "TOTAL":
-            st.caption("📊 Ordenado pelo **valor total** (todos os anos)")
-        else:
-            st.caption(f"📅 Ordenado pelo **% em {ano_selecionado}** (maior concentração neste ano)")
-
-    # Reordena se necessário
-    if ano_selecionado != "TOTAL":
-        col_pct_ordenar = f'{ano_selecionado}%'
-        df_display = df_display.sort_values(by=col_pct_ordenar, ascending=False, ignore_index=True)
-        df_display['#'] = range(1, len(df_display) + 1)
-
     # Reordena colunas
     cols_ordenadas = ['#', 'CNPJ', 'Razão Social']
     for ano in anos_cols:
@@ -4365,10 +4341,8 @@ def render_ranking_tab(engine, grupo: str):
 
     for ano in anos_cols:
         if ano in df_display.columns:
-            label = f"⭐{ano}" if ano == ano_selecionado else ano
-            column_config[ano] = st.column_config.NumberColumn(label, format="R$ %.2f")
-            label_pct = f"⭐{ano}%" if ano == ano_selecionado else f'{ano}%'
-            column_config[f'{ano}%'] = st.column_config.NumberColumn(label_pct, format="%.1f%%")
+            column_config[ano] = st.column_config.NumberColumn(ano, format="R$ %.2f")
+            column_config[f'{ano}%'] = st.column_config.NumberColumn(f'{ano}%', format="%.1f%%")
 
     st.dataframe(
         df_display,
@@ -4378,7 +4352,465 @@ def render_ranking_tab(engine, grupo: str):
         column_config=column_config
     )
 
-    st.caption("💡 Clique no cabeçalho da coluna para ordenar.")
+    st.caption("💡 Clique no cabeçalho da coluna para ordenar. Ordenado por valor TOTAL.")
+
+    # =========================================================================
+    # EXPANDER: ESTATÍSTICAS GERAIS DE ACURÁCIA
+    # =========================================================================
+    with st.expander("📊 Estatísticas Gerais de Acurácia", expanded=False):
+        st.markdown("""
+        **Distribuição geral das infrações por nível de acurácia.**
+
+        Os valores são **exclusivos** (sem sobreposição):
+        - 🟢 **ALTA** = Consenso das 3 IAs (maior confiabilidade)
+        - 🟡 **MÉDIA** = Maioria 2x1, não consenso total
+        - 🔴 **BAIXA** = IAs divergentes (requer avaliação manual)
+        """)
+
+        # Tenta carregar estatísticas gerais
+        stats_acur = None
+
+        with st.spinner("Carregando estatísticas de acurácia..."):
+            # Primeiro tenta usar os dados do ranking de acurácia (mais leve)
+            df_acuracia = get_ranking_acuracia(engine, top_n=10000, _cache_version=6, grupo=grupo)
+
+            if df_acuracia is not None and not df_acuracia.empty:
+                # Calcula totais a partir do ranking (soma de todas as empresas)
+                valor_alta = df_acuracia['total_alta'].sum()
+                valor_media = df_acuracia['total_media'].sum()
+                valor_baixa = df_acuracia['total_baixa'].sum()
+                valor_total = valor_alta + valor_media + valor_baixa
+
+                qtd_alta = df_acuracia['qtd_alta'].sum()
+                qtd_media = df_acuracia['qtd_media'].sum()
+                qtd_baixa = df_acuracia['qtd_baixa'].sum()
+                qtd_total = qtd_alta + qtd_media + qtd_baixa
+
+                if valor_total > 0 and qtd_total > 0:
+                    stats_acur = {
+                        'valor_alta': valor_alta,
+                        'valor_media': valor_media,
+                        'valor_baixa': valor_baixa,
+                        'valor_total': valor_total,
+                        'qtd_alta': int(qtd_alta),
+                        'qtd_media': int(qtd_media),
+                        'qtd_baixa': int(qtd_baixa),
+                        'qtd_total': int(qtd_total),
+                        'pct_valor_alta': (valor_alta / valor_total * 100),
+                        'pct_valor_media': (valor_media / valor_total * 100),
+                        'pct_valor_baixa': (valor_baixa / valor_total * 100),
+                        'pct_qtd_alta': (qtd_alta / qtd_total * 100),
+                        'pct_qtd_media': (qtd_media / qtd_total * 100),
+                        'pct_qtd_baixa': (qtd_baixa / qtd_total * 100)
+                    }
+
+        if stats_acur is not None:
+            # KPIs em cards
+            st.markdown("##### 💰 Por Valor")
+            col1, col2, col3, col4 = st.columns(4)
+
+            with col1:
+                st.metric(
+                    "🟢 ALTA",
+                    format_currency_br(stats_acur['valor_alta']),
+                    f"{stats_acur['pct_valor_alta']:.1f}%"
+                )
+            with col2:
+                st.metric(
+                    "🟡 MÉDIA",
+                    format_currency_br(stats_acur['valor_media']),
+                    f"{stats_acur['pct_valor_media']:.1f}%"
+                )
+            with col3:
+                st.metric(
+                    "🔴 BAIXA",
+                    format_currency_br(stats_acur['valor_baixa']),
+                    f"{stats_acur['pct_valor_baixa']:.1f}%"
+                )
+            with col4:
+                st.metric(
+                    "💰 TOTAL",
+                    format_currency_br(stats_acur['valor_total']),
+                    "100%",
+                    delta_color="off"
+                )
+
+            st.markdown("##### 📋 Por Quantidade de Itens")
+            col1, col2, col3, col4 = st.columns(4)
+
+            with col1:
+                st.metric(
+                    "🟢 ALTA",
+                    f"{stats_acur['qtd_alta']:,}".replace(",", "."),
+                    f"{stats_acur['pct_qtd_alta']:.1f}%"
+                )
+            with col2:
+                st.metric(
+                    "🟡 MÉDIA",
+                    f"{stats_acur['qtd_media']:,}".replace(",", "."),
+                    f"{stats_acur['pct_qtd_media']:.1f}%"
+                )
+            with col3:
+                st.metric(
+                    "🔴 BAIXA",
+                    f"{stats_acur['qtd_baixa']:,}".replace(",", "."),
+                    f"{stats_acur['pct_qtd_baixa']:.1f}%"
+                )
+            with col4:
+                st.metric(
+                    "📋 TOTAL",
+                    f"{stats_acur['qtd_total']:,}".replace(",", "."),
+                    "100%",
+                    delta_color="off"
+                )
+
+            # Gráficos
+            st.markdown("---")
+            col1, col2 = st.columns(2)
+
+            with col1:
+                df_pie_valor = pd.DataFrame([
+                    {'Nível': '🟢 ALTA', 'Valor': stats_acur['valor_alta'], 'Percentual': stats_acur['pct_valor_alta']},
+                    {'Nível': '🟡 MÉDIA', 'Valor': stats_acur['valor_media'], 'Percentual': stats_acur['pct_valor_media']},
+                    {'Nível': '🔴 BAIXA', 'Valor': stats_acur['valor_baixa'], 'Percentual': stats_acur['pct_valor_baixa']}
+                ])
+
+                fig1 = px.pie(
+                    df_pie_valor,
+                    values='Valor',
+                    names='Nível',
+                    title="💰 Distribuição por Valor",
+                    color='Nível',
+                    color_discrete_map={
+                        '🟢 ALTA': '#4CAF50',
+                        '🟡 MÉDIA': '#FF9800',
+                        '🔴 BAIXA': '#f44336'
+                    },
+                    hole=0.4
+                )
+                fig1.update_traces(textposition='inside', textinfo='percent+label')
+                st.plotly_chart(fig1, use_container_width=True)
+
+            with col2:
+                df_pie_qtd = pd.DataFrame([
+                    {'Nível': '🟢 ALTA', 'Quantidade': stats_acur['qtd_alta'], 'Percentual': stats_acur['pct_qtd_alta']},
+                    {'Nível': '🟡 MÉDIA', 'Quantidade': stats_acur['qtd_media'], 'Percentual': stats_acur['pct_qtd_media']},
+                    {'Nível': '🔴 BAIXA', 'Quantidade': stats_acur['qtd_baixa'], 'Percentual': stats_acur['pct_qtd_baixa']}
+                ])
+
+                fig2 = px.pie(
+                    df_pie_qtd,
+                    values='Quantidade',
+                    names='Nível',
+                    title="📋 Distribuição por Quantidade",
+                    color='Nível',
+                    color_discrete_map={
+                        '🟢 ALTA': '#4CAF50',
+                        '🟡 MÉDIA': '#FF9800',
+                        '🔴 BAIXA': '#f44336'
+                    },
+                    hole=0.4
+                )
+                fig2.update_traces(textposition='inside', textinfo='percent+label')
+                st.plotly_chart(fig2, use_container_width=True)
+
+            # Tabela resumo
+            st.markdown("##### 📋 Tabela Resumo")
+            df_resumo = pd.DataFrame([
+                {
+                    'Nível': '🟢 ALTA',
+                    'Valor (R$)': stats_acur['valor_alta'],
+                    '% Valor': stats_acur['pct_valor_alta'],
+                    'Quantidade': stats_acur['qtd_alta'],
+                    '% Qtd': stats_acur['pct_qtd_alta']
+                },
+                {
+                    'Nível': '🟡 MÉDIA',
+                    'Valor (R$)': stats_acur['valor_media'],
+                    '% Valor': stats_acur['pct_valor_media'],
+                    'Quantidade': stats_acur['qtd_media'],
+                    '% Qtd': stats_acur['pct_qtd_media']
+                },
+                {
+                    'Nível': '🔴 BAIXA',
+                    'Valor (R$)': stats_acur['valor_baixa'],
+                    '% Valor': stats_acur['pct_valor_baixa'],
+                    'Quantidade': stats_acur['qtd_baixa'],
+                    '% Qtd': stats_acur['pct_qtd_baixa']
+                },
+                {
+                    'Nível': '💰 TOTAL',
+                    'Valor (R$)': stats_acur['valor_total'],
+                    '% Valor': 100.0,
+                    'Quantidade': stats_acur['qtd_total'],
+                    '% Qtd': 100.0
+                }
+            ])
+
+            st.dataframe(
+                df_resumo,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    'Nível': st.column_config.TextColumn('Nível'),
+                    'Valor (R$)': st.column_config.NumberColumn('Valor (R$)', format="R$ %.2f"),
+                    '% Valor': st.column_config.ProgressColumn('% Valor', format="%.1f%%", min_value=0, max_value=100),
+                    'Quantidade': st.column_config.NumberColumn('Quantidade', format="%d"),
+                    '% Qtd': st.column_config.ProgressColumn('% Qtd', format="%.1f%%", min_value=0, max_value=100)
+                }
+            )
+        else:
+            st.info("Não foi possível carregar as estatísticas de acurácia.")
+
+    # =========================================================================
+    # EXPANDER: RANKING POR ACURÁCIA (POR EMPRESA)
+    # =========================================================================
+    with st.expander("🎯 Ranking por Qualidade de Acurácia (por Empresa)", expanded=False):
+        st.markdown("""
+        **Lógica de ordenação:**
+        1. 🟢 Maior % de infrações ALTA (mais confiável)
+        2. 🟡 Em empate, maior % MÉDIA
+        3. 🔴 Em empate, maior % BAIXA
+        4. 💰 Em empate final, maior valor total
+        """)
+
+        with st.spinner("Carregando ranking de acurácia..."):
+            df_acuracia_rank = get_ranking_acuracia(engine, top_n=100, _cache_version=6, grupo=grupo)
+
+        if df_acuracia_rank is not None and not df_acuracia_rank.empty:
+            # Prepara dados para exibição
+            df_acur_display = df_acuracia_rank[[
+                '#', 'cnpj_emitente', 'razao_emitente',
+                'pct_alta', 'pct_media', 'pct_baixa',
+                'total_alta', 'total_media', 'total_baixa', 'total_valor'
+            ]].copy()
+
+            df_acur_display.columns = [
+                '#', 'CNPJ', 'Razão Social',
+                '🟢 % ALTA', '🟡 % MÉDIA', '🔴 % BAIXA',
+                '🟢 R$ ALTA', '🟡 R$ MÉDIA', '🔴 R$ BAIXA', '💰 TOTAL'
+            ]
+
+            # Configuração das colunas
+            column_config_acur = {
+                '#': st.column_config.NumberColumn('#', width='small'),
+                'CNPJ': st.column_config.TextColumn('CNPJ', width='medium'),
+                'Razão Social': st.column_config.TextColumn('Razão Social', width='large'),
+                '🟢 % ALTA': st.column_config.ProgressColumn(
+                    '🟢 % ALTA',
+                    format="%.1f%%",
+                    min_value=0,
+                    max_value=100
+                ),
+                '🟡 % MÉDIA': st.column_config.ProgressColumn(
+                    '🟡 % MÉDIA',
+                    format="%.1f%%",
+                    min_value=0,
+                    max_value=100
+                ),
+                '🔴 % BAIXA': st.column_config.ProgressColumn(
+                    '🔴 % BAIXA',
+                    format="%.1f%%",
+                    min_value=0,
+                    max_value=100
+                ),
+                '🟢 R$ ALTA': st.column_config.NumberColumn('🟢 R$ ALTA', format="R$ %.2f"),
+                '🟡 R$ MÉDIA': st.column_config.NumberColumn('🟡 R$ MÉDIA', format="R$ %.2f"),
+                '🔴 R$ BAIXA': st.column_config.NumberColumn('🔴 R$ BAIXA', format="R$ %.2f"),
+                '💰 TOTAL': st.column_config.NumberColumn('💰 TOTAL', format="R$ %.2f")
+            }
+
+            st.dataframe(
+                df_acur_display,
+                use_container_width=True,
+                hide_index=True,
+                height=400,
+                column_config=column_config_acur
+            )
+
+            # Estatísticas resumidas
+            st.markdown("---")
+            col1, col2, col3, col4 = st.columns(4)
+
+            media_pct_alta = df_acuracia_rank['pct_alta'].mean()
+            media_pct_media = df_acuracia_rank['pct_media'].mean()
+            media_pct_baixa = df_acuracia_rank['pct_baixa'].mean()
+
+            with col1:
+                st.metric("📊 Média % ALTA", f"{media_pct_alta:.1f}%")
+            with col2:
+                st.metric("📊 Média % MÉDIA", f"{media_pct_media:.1f}%")
+            with col3:
+                st.metric("📊 Média % BAIXA", f"{media_pct_baixa:.1f}%")
+            with col4:
+                empresas_majoritaria_alta = len(df_acuracia_rank[df_acuracia_rank['pct_alta'] > 50])
+                st.metric("🏆 Empresas >50% ALTA", f"{empresas_majoritaria_alta}")
+
+            st.caption("💡 Empresas com maior % ALTA têm infrações mais confiáveis (consenso das 3 IAs).")
+        else:
+            st.info("Não foi possível carregar o ranking de acurácia.")
+
+    # =========================================================================
+    # EXPANDER: ESTATÍSTICAS DESCRITIVAS
+    # =========================================================================
+    with st.expander("📊 Estatísticas Descritivas", expanded=False):
+        desc = stats['descritivas']
+        col1, col2, col3, col4, col5 = st.columns(5)
+        with col1:
+            st.metric("📊 Média", format_currency_br(desc['media']))
+        with col2:
+            st.metric("📊 Mediana", format_currency_br(desc['mediana']))
+        with col3:
+            st.metric("📉 Mínimo", format_currency_br(desc['min']))
+        with col4:
+            st.metric("📈 Máximo", format_currency_br(desc['max']))
+        with col5:
+            st.metric("📏 Desvio Padrão", format_currency_br(desc['std']))
+
+        # Concentração (em relação ao TOTAL GERAL de todas empresas)
+        total_geral = stats['total_geral']
+        if total_geral > 0:
+            st.markdown("#### Concentração")
+            # Calcula concentração das top N empresas (df_valor já está ordenado)
+            top10_valor = df_valor.head(10)['TOTAL'].sum()
+            top20_valor = df_valor.head(20)['TOTAL'].sum()
+            top50_valor = df_valor.head(50)['TOTAL'].sum()
+
+            pct_top10 = (top10_valor / total_geral) * 100
+            pct_top20 = (top20_valor / total_geral) * 100
+            pct_top50 = (top50_valor / total_geral) * 100
+
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric(
+                    "🔝 Top 10",
+                    f"{pct_top10:.1f}%",
+                    delta=format_currency_br(top10_valor),
+                    help="Concentração do valor nas 10 maiores empresas vs total geral"
+                )
+            with col2:
+                st.metric(
+                    "🔝 Top 20",
+                    f"{pct_top20:.1f}%",
+                    delta=format_currency_br(top20_valor),
+                    help="Concentração do valor nas 20 maiores empresas vs total geral"
+                )
+            with col3:
+                st.metric(
+                    "🔝 Top 50",
+                    f"{pct_top50:.1f}%",
+                    delta=format_currency_br(top50_valor),
+                    help="Concentração do valor nas 50 maiores empresas vs total geral"
+                )
+            with col4:
+                # Média por item
+                media_item = total_geral / stats['total_itens'] if stats['total_itens'] > 0 else 0
+                st.metric(
+                    "💵 Média/Item",
+                    format_currency_br(media_item),
+                    help="Valor médio por item de infração"
+                )
+
+    # =========================================================================
+    # EXPANDER: DISTRIBUIÇÃO POR ANO
+    # =========================================================================
+    with st.expander("📅 Distribuição por Ano", expanded=False):
+        anos = stats['anos']
+        cols = st.columns(len(anos))
+
+        for i, ano in enumerate(anos):
+            with cols[i]:
+                ano_stats = stats['por_ano'].get(ano, {})
+                valor = ano_stats.get('valor', 0)
+                pct = ano_stats.get('pct', 0)
+                qtd = ano_stats.get('qtd', 0)
+                empresas = ano_stats.get('empresas_ativas', 0)
+
+                # Cor baseada no percentual
+                if pct >= 25:
+                    cor = "#4CAF50"  # Verde
+                elif pct >= 15:
+                    cor = "#FF9800"  # Laranja
+                else:
+                    cor = "#9E9E9E"  # Cinza
+
+                st.markdown(f"""
+                <div style='background: linear-gradient(135deg, {cor}22 0%, {cor}11 100%);
+                            padding: 1rem; border-radius: 10px; border-left: 4px solid {cor};
+                            text-align: center;'>
+                    <h3 style='margin: 0; color: {cor};'>{ano}</h3>
+                    <h2 style='margin: 0.5rem 0;'>{format_currency_br(valor)}</h2>
+                    <p style='margin: 0; font-size: 1.2rem; font-weight: bold; color: {cor};'>{pct:.1f}%</p>
+                    <p style='margin: 0.3rem 0 0 0; font-size: 0.8rem; color: #666;'>
+                        {format_number_br(qtd)} itens | {empresas} empresas
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+
+    # =========================================================================
+    # EXPANDER: VISUALIZAÇÕES (GRÁFICOS)
+    # =========================================================================
+    with st.expander("📊 Visualizações", expanded=False):
+        tab_dist, tab_top10 = st.tabs(["📅 Distribuição por Ano", "🏆 Top 10 Empresas"])
+
+        with tab_dist:
+            # Gráfico de barras por ano
+            anos_data = []
+            for ano in stats['anos']:
+                ano_stats = stats['por_ano'].get(ano, {})
+                anos_data.append({
+                    'Ano': ano,
+                    'Valor': ano_stats.get('valor', 0),
+                    'Percentual': ano_stats.get('pct', 0),
+                    'Itens': ano_stats.get('qtd', 0),
+                    'Empresas': ano_stats.get('empresas_ativas', 0)
+                })
+
+            df_anos = pd.DataFrame(anos_data)
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                fig1 = px.bar(
+                    df_anos,
+                    x='Ano',
+                    y='Valor',
+                    title="💰 Valor por Ano",
+                    color='Valor',
+                    color_continuous_scale='Blues',
+                    text=df_anos['Percentual'].apply(lambda x: f'{x:.1f}%')
+                )
+                fig1.update_traces(textposition='outside')
+                fig1.update_layout(showlegend=False)
+                st.plotly_chart(fig1, use_container_width=True)
+
+            with col2:
+                fig2 = px.pie(
+                    df_anos,
+                    values='Valor',
+                    names='Ano',
+                    title="📊 Distribuição Percentual",
+                    hole=0.4
+                )
+                fig2.update_traces(textposition='inside', textinfo='percent+label')
+                st.plotly_chart(fig2, use_container_width=True)
+
+        with tab_top10:
+            df_top10 = df_valor.head(10).copy()
+            df_top10['Empresa'] = df_top10['razao_emitente'].apply(
+                lambda x: x[:25] + '...' if len(str(x)) > 25 else x
+            )
+
+            fig = px.bar(
+                df_top10,
+                x='Empresa',
+                y='TOTAL',
+                title="🏆 Top 10 Empresas por Valor Total",
+                color='TOTAL',
+                color_continuous_scale='Reds'
+            )
+            fig.update_layout(xaxis_tickangle=-45, showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)
 
 
 def render_pesquisa_produtos_tab(engine, grupo: str):
@@ -4515,35 +4947,19 @@ def main():
         st.stop()
 
     # =========================================================================
-    # CSS CUSTOMIZADO PARA ABAS PRINCIPAIS E SIDEBAR
+    # CSS CUSTOMIZADO PARA ABAS PRINCIPAIS
     # =========================================================================
 
     st.markdown("""
     <style>
-        /* Sidebar sempre colapsado por padrão */
+        /* Oculta sidebar completamente */
         section[data-testid="stSidebar"] {
-            width: 0px !important;
-            min-width: 0px !important;
-            transform: translateX(-100%);
-            transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
+            display: none !important;
         }
-        section[data-testid="stSidebar"]:hover,
-        section[data-testid="stSidebar"]:focus-within {
-            width: 300px !important;
-            min-width: 300px !important;
-            transform: translateX(0);
-        }
-        /* Indicador visual para expandir */
-        section[data-testid="stSidebar"]::before {
-            content: "☰";
-            position: absolute;
-            right: -30px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 24px;
-            color: #1565C0;
-            cursor: pointer;
-            z-index: 1000;
+
+        /* Remove padding superior excessivo */
+        .stMainBlockContainer {
+            padding-top: 1rem !important;
         }
 
         /* Estilo das abas principais (operações fiscais) */
@@ -4577,59 +4993,12 @@ def main():
     """, unsafe_allow_html=True)
 
     # =========================================================================
-    # SIDEBAR - INFORMAÇÕES E SISTEMA (SEM SELETOR DE GRUPO)
-    # =========================================================================
-
-    with st.sidebar:
-        st.markdown("""
-        <div style='text-align: center; padding: 0.5rem 0; border-bottom: 2px solid #1565C0; margin-bottom: 1rem;'>
-            <h2 style='color: #1565C0; margin: 0;'>🎯 ARGOS</h2>
-            <p style='color: #666; margin: 0; font-size: 0.8rem;'>Operação Fiscal</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Informações sobre os níveis de acurácia
-        st.markdown("### 📊 Níveis de Acurácia")
-
-        st.success("**🟢 ALTA**\n\nConsenso das 3 IAs\n\n*1-2% de erros esperados*")
-        st.warning("**🟡 MÉDIA**\n\nMaioria 2x1\n\n*Até 5% de erros*")
-        st.error("**🔴 BAIXA**\n\nIAs divergentes\n\n*Requer avaliação manual!*")
-
-        st.markdown("---")
-
-        # Sistema
-        with st.expander("⚙️ Sistema", expanded=False):
-            st.caption(f"Cache consulta: {CACHE_TTL_SECONDS//60} min")
-            st.caption(f"Cache ranking: 24h")
-
-            if st.button("🧹 Limpar Cache", use_container_width=True):
-                st.cache_data.clear()
-                st.cache_resource.clear()
-                for key in list(st.session_state.keys()):
-                    del st.session_state[key]
-                gc.collect()
-                st.rerun()
-
-            # Mostra memória do grupo ativo
-            grupo_ativo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
-            dados_grupo = st.session_state.get(f'consulta_dados_{grupo_ativo}') or st.session_state.get('consulta_dados')
-            if dados_grupo:
-                df_mem = dados_grupo.get('df')
-                if df_mem is not None:
-                    mem_mb = df_mem.memory_usage(deep=True).sum() / 1024 / 1024
-                    st.info(f"📊 {mem_mb:.1f} MB ({len(df_mem):,} linhas)")
-        
-        st.markdown("---")
-        st.caption("Receita Estadual de SC")
-
-    # =========================================================================
-    # HEADER PRINCIPAL
+    # HEADER COMPACTO
     # =========================================================================
 
     st.markdown("""
-    <div style='text-align: center; margin-bottom: 0.5rem;'>
-        <h1 style='color: #1565C0; margin: 0;'>🎯 Operação ARGOS</h1>
-        <p style='color: #666; margin: 0;'>Selecione a operação fiscal para análise</p>
+    <div style='text-align: center; margin: 0; padding: 0;'>
+        <h2 style='color: #1565C0; margin: 0; padding: 0;'>🎯 Operação ARGOS</h2>
     </div>
     """, unsafe_allow_html=True)
 
