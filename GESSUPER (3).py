@@ -76,17 +76,17 @@ GRUPOS_CONFIG = {
         "nome": "GESSUPER",
         "nome_display": "Infrações GESSUPER",
         "descricao": "Sistema de Infrações GESSUPER - Receita Estadual SC",
-        # Tabelas (sem NFe para GESSUPER)
+        # Tabelas (com NFe para GESSUPER)
         "tabelas": {
             "nfce": "niat.infracoes_gessuper_nfce_3M",
             "cupons": "niat.infracoes_gessuper_cupons_3M",
-            "nfe": None  # GESSUPER não tem NFe
+            "nfe": "niat.infracoes_gessuper_nfe_3m"  # GESSUPER agora tem NFe
         },
-        # Modelos de exportação
-        "modelos_exportacao": ["Anexo J"],  # Modelo único para NFCe + Cupom
-        # Colunas específicas para export (padrão do GESSUPER)
+        # Modelos de exportação (2 opções para GESSUPER)
+        "modelos_exportacao": ["Notas de Consumo", "NFe"],
+        # Colunas específicas para export
         "export_config": {
-            "Anexo J": {
+            "Notas de Consumo": {
                 "titulo_aba_dados": "ANEXO J1 - NOTAS DE SAÍDAS",
                 "titulo_aba_icms": "ANEXO J2 - ICMS DEVIDO",
                 "colunas_header": [
@@ -96,6 +96,24 @@ GRUPOS_CONFIG = {
                     "Descrição do produto", "CFOP", "ICMS destacado", "Código do Produto",
                     "Cód. Tot. Par", "Legislação", "Valor da Operação", "Alíquota ICMS correta",
                     "Alíquota ICMS efetiva", "ICMS devido", "ICMS não-recolhido"
+                ]
+            },
+            "NFe": {
+                "titulo_aba_dados": "ANEXO J1 - NOTAS DE SAÍDAS",
+                "titulo_aba_icms": "ANEXO J2 - ICMS DEVIDO",
+                "colunas_header": [
+                    "Data de emissão", "Período", "Tipo Documento", "Chave de acesso",
+                    "Link de Acesso", "ECF-FAB", "Entrada ou saída", "IE Emitente",
+                    "CNPJ Emitente", "Razão do Emitente", "IE Destinatário",
+                    "CNPJ Destinatário", "CPF Destinatário", "Razão do Destinatário",
+                    "Estado do Destinatário", "Regime do Destinatário", "CNAE do Destinatário",
+                    "Número da Nota", "Número do Item", "Origem do Produto", "Ind Final",
+                    "Tipo de Operação Final", "TTD 409/410/411", "GTIN", "NCM",
+                    "Descrição do produto", "CFOP", "Código do Produto", "Valor Total",
+                    "Valor do Frete", "Valor do Seguro", "Valor de Outras Despesas",
+                    "Valor do Desconto", "Cod. Tot. Par", "Alíquota Destacada", "ICMS Destacado",
+                    "Valor da Operação", "Alíquota Efetiva Correta (FISCO)", "Legislação Aplicável",
+                    "Alíquota Efetiva destacada pelo Contribuinte", "ICMS devido", "ICMS não-recolhido"
                 ]
             }
         },
@@ -131,31 +149,13 @@ GRUPOS_CONFIG = {
             "cupons": "niat.infracoes_gesmac_cupons_3m",
             "nfe": "niat.infracoes_gesmac_nfe_3m"  # GESMAC tem NFe
         },
-        # Modelos de exportação (2 modelos para GESMAC)
-        "modelos_exportacao": ["NFe", "NFCe + Cupom Fiscal"],
+        # Modelo de exportação único com todas as modalidades (NFe + NFCe + Cupons)
+        "modelos_exportacao": ["Anexo J"],
         # Colunas específicas para export
         "export_config": {
-            "NFe": {
-                "titulo_aba_dados": "ANEXO NFe - NOTAS DE SAÍDAS",
-                "titulo_aba_icms": "ICMS DEVIDO - NFe",
-                "colunas_header": [
-                    "Data de emissão", "Período", "Tipo Documento", "Chave de acesso",
-                    "Link de Acesso", "ECF-FAB", "Entrada ou saída", "IE Emitente",
-                    "CNPJ Emitente", "Razão do Emitente", "IE Destinatário",
-                    "CNPJ Destinatário", "CPF Destinatário", "Razão do Destinatário",
-                    "Estado do Destinatário", "Regime do Destinatário", "CNAE do Destinatário",
-                    "Número da Nota", "Número do Item", "Origem do Produto", "Ind Final",
-                    "Tipo de Operação Final", "TTD 409/410/411", "GTIN", "NCM",
-                    "Descrição do produto", "CFOP", "Código do Produto", "Valor Total",
-                    "Valor do Frete", "Valor do Seguro", "Valor de Outras Despesas",
-                    "Valor do Desconto", "Cod. Tot. Par", "Alíquota Destacada", "ICMS Destacado",
-                    "Valor da Operação", "Alíquota Efetiva Correta (FISCO)", "Legislação Aplicável",
-                    "Alíquota Efetiva destacada pelo Contribuinte", "ICMS devido", "ICMS não-recolhido"
-                ]
-            },
-            "NFCe + Cupom Fiscal": {
-                "titulo_aba_dados": "ANEXO NFCe+CF - DOCUMENTOS",
-                "titulo_aba_icms": "ICMS DEVIDO - NFCe+CF",
+            "Anexo J": {
+                "titulo_aba_dados": "ANEXO J1 - NOTAS DE SAÍDAS",
+                "titulo_aba_icms": "ANEXO J2 - ICMS DEVIDO",
                 "colunas_header": [
                     "Data de emissão", "Período", "Tipo Documento", "Chave de acesso",
                     "Link de Acesso", "ECF-FAB", "Entrada ou saída", "IE Emitente",
@@ -855,7 +855,7 @@ def get_base_df(_engine, identificador_digits: str, nivel: str = "BAIXA", grupo:
             """
         queries.append(query_cupons)
 
-    # Query NFe (apenas GESMAC)
+    # Query NFe (GESMAC e GESSUPER quando configurado)
     if tabelas.get('nfe') and (tipo_doc_filter is None or tipo_doc_filter == 'NFe'):
         query_nfe = f"""
             SELECT
@@ -982,16 +982,17 @@ def build_export_df(df: pd.DataFrame, nivel_str: str, grupo: str = None, modelo_
     # Copia o DataFrame
     df_export = df.copy()
 
-    # Filtra por tipo de documento se modelo específico for selecionado (GESMAC)
-    if grupo == "GESMAC" and modelo_export:
+    # Filtra por tipo de documento conforme modelo selecionado
+    if modelo_export:
         if modelo_export == "NFe":
-            # Filtra apenas NFe
+            # Filtra apenas NFe (usado no GESSUPER para opção NFe)
             df_export = df_export[df_export['tipo_doc'].str.upper().str.contains('NFE', na=False) &
                                   ~df_export['tipo_doc'].str.upper().str.contains('NFCE', na=False)]
-        elif modelo_export == "NFCe + Cupom Fiscal":
-            # Filtra NFCe e Cupom
+        elif modelo_export == "Notas de Consumo":
+            # Filtra NFCe e Cupom (usado no GESSUPER para opção Notas de Consumo)
             df_export = df_export[df_export['tipo_doc'].str.upper().str.contains('NFCE|ECF|CUPOM', regex=True, na=False) |
                                   ~df_export['tipo_doc'].str.upper().str.contains('NFE', na=False)]
+        # "Anexo J" não filtra - inclui todos os documentos (NFe + NFCe + Cupons)
 
     if df_export.empty:
         return None
@@ -1020,9 +1021,19 @@ def build_export_df(df: pd.DataFrame, nivel_str: str, grupo: str = None, modelo_
     df_export['icms_nao_recolhido'] = df_export['icms_devido'] - icms_destacado
     df_export['icms_nao_recolhido'] = df_export['icms_nao_recolhido'].clip(lower=0)  # Não pode ser negativo
 
-    # Define colunas de exportação baseado no grupo
-    if grupo == "GESMAC":
-        # Colunas estendidas para GESMAC (NFe e NFCe + Cupom têm estrutura similar)
+    # Filtra apenas registros com ICMS não-recolhido > 0 (remove zeros e negativos)
+    df_export = df_export[df_export['icms_nao_recolhido'] > 0]
+
+    if df_export.empty:
+        return None
+
+    # Define colunas de exportação baseado no grupo e modelo
+    # GESMAC sempre usa colunas estendidas
+    # GESSUPER usa colunas estendidas para NFe e colunas padrão para Notas de Consumo
+    usar_colunas_estendidas = (grupo == "GESMAC") or (grupo == "GESSUPER" and modelo_export == "NFe")
+
+    if usar_colunas_estendidas:
+        # Colunas estendidas para NFe (GESMAC ou GESSUPER NFe)
         colunas_export = [
             "data_emissao", "periodo", "tipo_doc", "chave", "link_acesso",
             "modelo_ecf", "entrada_ou_saida", "ie_emitente", "cnpj_emitente",
@@ -1036,13 +1047,13 @@ def build_export_df(df: pd.DataFrame, nivel_str: str, grupo: str = None, modelo_
             "legislacao_ia_icms", "aliq_efetiva", "icms_devido", "icms_nao_recolhido"
         ]
     else:
-        # Colunas padrão para GESSUPER
+        # Colunas padrão para GESSUPER (Notas de Consumo - NFCe + Cupons)
         colunas_export = [
             "data_emissao", "periodo", "tipo_doc", "chave", "link_acesso",
             "modelo_ecf", "entrada_ou_saida", "cnpj_emitente", "razao_emitente",
             "numero_nota", "gtin", "ncm", "numero_item", "descricao", "cfop",
             "icms_emitente", "cod_prod", "cod_tot_par", "legislacao_ia_icms",
-            "bc_fisco", "aliquota_ia_icms", "aliq_efetiva", "icms_devido"
+            "bc_fisco", "aliquota_ia_icms", "aliq_efetiva", "icms_devido", "icms_nao_recolhido"
         ]
 
     # Filtra apenas colunas que existem no DataFrame
