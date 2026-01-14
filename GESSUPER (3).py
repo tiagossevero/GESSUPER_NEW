@@ -1851,13 +1851,22 @@ def save_to_network_fast(df: pd.DataFrame, contrib_info: dict, nivel: str, progr
                 progress_callback(parte, total_partes, f"Parte {parte} de {total_partes} salva!")
         
         return True, f"{total_partes} arquivos salvos com sucesso!", file_paths, REDE_PATH
-    
+
     except Exception as e:
         error_msg = str(e)
+        # Captura o caminho que falhou para diagnóstico
+        filepath_info = file_paths[-1] if file_paths else "N/A"
+
         # Detecta erro de autenticação Kerberos expirada
         if "Ticket expired" in error_msg or "SpnegoError" in error_msg or "authenticate" in error_msg.lower():
             return False, "🔐 **Sessão de rede expirada!** Faça logout/login no Windows ou acesse qualquer pasta de rede no Explorer para renovar.", file_paths, REDE_PATH
-        return False, f"Erro ao salvar: {error_msg}", file_paths, REDE_PATH
+
+        # Detecta erros de DFS/rede específicos
+        if "0xc000035c" in error_msg or "STATUS_UNKNOWN" in error_msg:
+            return False, f"❌ **Erro de rede DFS!** Possíveis causas:\n\n1. 🔐 Sessão expirada - tente acessar `{REDE_PATH}` no Explorer primeiro\n2. 📁 Pasta de destino indisponível\n3. 🔄 Reinicie o Streamlit\n\n**Detalhes:** {error_msg[:200]}", file_paths, REDE_PATH
+
+        # Erro genérico com mais informações
+        return False, f"Erro ao salvar: {error_msg}\n\n**Caminho:** {filepath_info}", file_paths, REDE_PATH
 
 def save_csv_to_network(df: pd.DataFrame, contrib_info: dict, nivel: str) -> tuple:
     """
@@ -1883,13 +1892,18 @@ def save_csv_to_network(df: pd.DataFrame, contrib_info: dict, nivel: str) -> tup
             f.write(csv_bytes)
         
         return True, "CSV salvo com sucesso!", filepath, REDE_PATH
-    
+
     except Exception as e:
         error_msg = str(e)
         # Detecta erro de autenticação Kerberos expirada
         if "Ticket expired" in error_msg or "SpnegoError" in error_msg or "authenticate" in error_msg.lower():
             return False, "🔐 **Sessão de rede expirada!** Faça logout/login no Windows ou acesse qualquer pasta de rede no Explorer para renovar.", None, REDE_PATH
-        return False, f"Erro ao salvar CSV: {error_msg}", None, REDE_PATH
+
+        # Detecta erros de DFS/rede específicos
+        if "0xc000035c" in error_msg or "STATUS_UNKNOWN" in error_msg:
+            return False, f"❌ **Erro de rede DFS!** Possíveis causas:\n\n1. 🔐 Sessão expirada - tente acessar `{REDE_PATH}` no Explorer primeiro\n2. 📁 Pasta de destino indisponível\n3. 🔄 Reinicie o Streamlit\n\n**Caminho:** {filepath}\n**Detalhes:** {error_msg[:200]}", None, REDE_PATH
+
+        return False, f"Erro ao salvar CSV: {error_msg}\n\n**Caminho:** {filepath}", None, REDE_PATH
 
 def save_to_network(df: pd.DataFrame, contrib_info: dict, nivel: str, progress_callback=None) -> tuple:
     """
