@@ -1733,12 +1733,22 @@ def export_to_excel_or_zip(df: pd.DataFrame, contrib_info: dict, nivel: str, pro
 def get_export_filename(contrib_info: dict, nivel: str, extension: str) -> str:
     """
     Gera o nome do arquivo no formato: CNPJ_14_DIGITOS - RAZAO_SOCIAL.extensao
+    Sanitiza caracteres que podem causar erros em caminhos de rede Windows/DFS.
     """
     if contrib_info:
         cnpj = sanitize_identificador(contrib_info.get('cnpj', ''))
         razao = contrib_info.get('razao_social', 'EMPRESA')
-        # Limpa caracteres especiais da razão social
-        razao_clean = re.sub(r'[<>:"/\\|?*]', '', razao)[:50]  # Limita a 50 chars
+        # Limpa caracteres proibidos no Windows: < > : " / \ | ? *
+        razao_clean = re.sub(r'[<>:"/\\|?*]', '', razao)
+        # Remove pontos no final (causam erro em DFS)
+        razao_clean = razao_clean.rstrip('.')
+        # Remove espaços extras
+        razao_clean = re.sub(r'\s+', ' ', razao_clean).strip()
+        # Limita a 50 chars
+        razao_clean = razao_clean[:50].rstrip('.')
+        # Se ficou vazio, usa fallback
+        if not razao_clean:
+            razao_clean = 'EMPRESA'
         return f"{cnpj} - {razao_clean}.{extension}"
     return f"infracoes_gessuper_{nivel.lower()}.{extension}"
 
@@ -4993,16 +5003,6 @@ def main():
     """, unsafe_allow_html=True)
 
     # =========================================================================
-    # HEADER COMPACTO
-    # =========================================================================
-
-    st.markdown("""
-    <div style='text-align: center; margin: 0; padding: 0;'>
-        <h2 style='color: #1565C0; margin: 0; padding: 0;'>🎯 Operação ARGOS</h2>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # =========================================================================
     # ABAS PRINCIPAIS - OPERAÇÕES FISCAIS
     # =========================================================================
 
@@ -5026,6 +5026,13 @@ def render_operacao_fiscal(engine, grupo: str):
     Cada aba (GESSUPER NFC-e, GESSUPER NF-e, GESMAC) chama esta função.
     """
     grupo_config = GRUPOS_CONFIG[grupo]
+
+    # Header da operação
+    st.markdown("""
+    <div style='text-align: center; margin: 0.5rem 0;'>
+        <span style='color: #1565C0; font-size: 1.3rem; font-weight: 600;'>🎯 Operação ARGOS</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Obtém estados específicos do grupo
     nav_page_key = f'nav_page_{grupo}'
