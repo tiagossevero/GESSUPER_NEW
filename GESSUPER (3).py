@@ -1851,13 +1851,22 @@ def save_to_network_fast(df: pd.DataFrame, contrib_info: dict, nivel: str, progr
                 progress_callback(parte, total_partes, f"Parte {parte} de {total_partes} salva!")
         
         return True, f"{total_partes} arquivos salvos com sucesso!", file_paths, REDE_PATH
-    
+
     except Exception as e:
         error_msg = str(e)
+        # Captura o caminho que falhou para diagnóstico
+        filepath_info = file_paths[-1] if file_paths else "N/A"
+
         # Detecta erro de autenticação Kerberos expirada
         if "Ticket expired" in error_msg or "SpnegoError" in error_msg or "authenticate" in error_msg.lower():
             return False, "🔐 **Sessão de rede expirada!** Faça logout/login no Windows ou acesse qualquer pasta de rede no Explorer para renovar.", file_paths, REDE_PATH
-        return False, f"Erro ao salvar: {error_msg}", file_paths, REDE_PATH
+
+        # Detecta erros de DFS/rede específicos
+        if "0xc000035c" in error_msg or "STATUS_UNKNOWN" in error_msg:
+            return False, f"❌ **Erro de rede DFS!** Possíveis causas:\n\n1. 🔐 Sessão expirada - tente acessar `{REDE_PATH}` no Explorer primeiro\n2. 📁 Pasta de destino indisponível\n3. 🔄 Reinicie o Streamlit\n\n**Detalhes:** {error_msg[:200]}", file_paths, REDE_PATH
+
+        # Erro genérico com mais informações
+        return False, f"Erro ao salvar: {error_msg}\n\n**Caminho:** {filepath_info}", file_paths, REDE_PATH
 
 def save_csv_to_network(df: pd.DataFrame, contrib_info: dict, nivel: str) -> tuple:
     """
@@ -1883,13 +1892,167 @@ def save_csv_to_network(df: pd.DataFrame, contrib_info: dict, nivel: str) -> tup
             f.write(csv_bytes)
         
         return True, "CSV salvo com sucesso!", filepath, REDE_PATH
-    
+
     except Exception as e:
         error_msg = str(e)
         # Detecta erro de autenticação Kerberos expirada
         if "Ticket expired" in error_msg or "SpnegoError" in error_msg or "authenticate" in error_msg.lower():
             return False, "🔐 **Sessão de rede expirada!** Faça logout/login no Windows ou acesse qualquer pasta de rede no Explorer para renovar.", None, REDE_PATH
-        return False, f"Erro ao salvar CSV: {error_msg}", None, REDE_PATH
+
+        # Detecta erros de DFS/rede específicos
+        if "0xc000035c" in error_msg or "STATUS_UNKNOWN" in error_msg:
+            return False, f"❌ **Erro de rede DFS!** Possíveis causas:\n\n1. 🔐 Sessão expirada - tente acessar `{REDE_PATH}` no Explorer primeiro\n2. 📁 Pasta de destino indisponível\n3. 🔄 Reinicie o Streamlit\n\n**Caminho:** {filepath}\n**Detalhes:** {error_msg[:200]}", None, REDE_PATH
+
+        return False, f"Erro ao salvar CSV: {error_msg}\n\n**Caminho:** {filepath}", None, REDE_PATH
+
+
+def diagnostico_rede() -> dict:
+    """
+    Executa diagnóstico completo de conexão com a rede.
+    Retorna dict com resultados de cada teste.
+    """
+    from datetime import datetime
+    import traceback
+
+    resultados = {
+        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'smb_disponivel': SMB_AVAILABLE,
+        'rede_path': REDE_PATH,
+        'testes': []
+    }
+
+    if not SMB_AVAILABLE:
+        resultados['testes'].append({
+            'nome': 'Biblioteca SMB',
+            'status': 'ERRO',
+            'mensagem': 'smbclient não instalado. Execute: pip install smbprotocol',
+            'detalhes': None
+        })
+        return resultados
+
+    resultados['testes'].append({
+        'nome': 'Biblioteca SMB',
+        'status': 'OK',
+        'mensagem': 'smbprotocol disponível',
+        'detalhes': None
+    })
+
+    # Teste 1: Listar diretório
+    try:
+        arquivos = smbclient.listdir(REDE_PATH)
+        resultados['testes'].append({
+            'nome': 'Listar diretório',
+            'status': 'OK',
+            'mensagem': f'Diretório acessível ({len(arquivos)} itens)',
+            'detalhes': arquivos[:10] if len(arquivos) > 10 else arquivos
+        })
+    except Exception as e:
+        resultados['testes'].append({
+            'nome': 'Listar diretório',
+            'status': 'ERRO',
+            'mensagem': str(e)[:300],
+            'detalhes': traceback.format_exc()
+        })
+        # Se não conseguiu listar, não adianta continuar
+        return resultados
+
+    # Teste 2: Criar arquivo de teste
+    test_filename = f"_TESTE_CONEXAO_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+    test_filepath = f"{REDE_PATH}\\{test_filename}"
+    test_content = f"Teste de conexão realizado em {datetime.now()}\nUsuário: ARGOS\nSistema: GESSUPER"
+
+    try:
+        with smbclient.open_file(test_filepath, mode="w") as f:
+            f.write(test_content)
+        resultados['testes'].append({
+            'nome': 'Criar arquivo',
+            'status': 'OK',
+            'mensagem': f'Arquivo criado: {test_filename}',
+            'detalhes': test_filepath
+        })
+    except Exception as e:
+        resultados['testes'].append({
+            'nome': 'Criar arquivo',
+            'status': 'ERRO',
+            'mensagem': str(e)[:300],
+            'detalhes': traceback.format_exc()
+        })
+        return resultados
+
+    # Teste 3: Ler arquivo de teste
+    try:
+        with smbclient.open_file(test_filepath, mode="r") as f:
+            conteudo_lido = f.read()
+        if conteudo_lido == test_content:
+            resultados['testes'].append({
+                'nome': 'Ler arquivo',
+                'status': 'OK',
+                'mensagem': 'Conteúdo verificado corretamente',
+                'detalhes': None
+            })
+        else:
+            resultados['testes'].append({
+                'nome': 'Ler arquivo',
+                'status': 'AVISO',
+                'mensagem': 'Arquivo lido mas conteúdo difere',
+                'detalhes': conteudo_lido[:100]
+            })
+    except Exception as e:
+        resultados['testes'].append({
+            'nome': 'Ler arquivo',
+            'status': 'ERRO',
+            'mensagem': str(e)[:300],
+            'detalhes': traceback.format_exc()
+        })
+
+    # Teste 4: Deletar arquivo de teste
+    try:
+        smbclient.remove(test_filepath)
+        resultados['testes'].append({
+            'nome': 'Deletar arquivo',
+            'status': 'OK',
+            'mensagem': 'Arquivo de teste removido',
+            'detalhes': None
+        })
+    except Exception as e:
+        resultados['testes'].append({
+            'nome': 'Deletar arquivo',
+            'status': 'AVISO',
+            'mensagem': f'Não foi possível remover: {str(e)[:200]}',
+            'detalhes': f'Remova manualmente: {test_filepath}'
+        })
+
+    # Teste 5: Criar arquivo binário (simula Excel)
+    test_bin_filename = f"_TESTE_BINARIO_{datetime.now().strftime('%Y%m%d_%H%M%S')}.bin"
+    test_bin_filepath = f"{REDE_PATH}\\{test_bin_filename}"
+    test_bin_content = b"TESTE" * 1000  # 5KB de dados binários
+
+    try:
+        with smbclient.open_file(test_bin_filepath, mode="wb") as f:
+            f.write(test_bin_content)
+        resultados['testes'].append({
+            'nome': 'Criar arquivo binário',
+            'status': 'OK',
+            'mensagem': f'Arquivo binário criado: {test_bin_filename} (5KB)',
+            'detalhes': test_bin_filepath
+        })
+
+        # Tenta deletar
+        try:
+            smbclient.remove(test_bin_filepath)
+        except:
+            pass
+
+    except Exception as e:
+        resultados['testes'].append({
+            'nome': 'Criar arquivo binário',
+            'status': 'ERRO',
+            'mensagem': str(e)[:300],
+            'detalhes': traceback.format_exc()
+        })
+
+    return resultados
+
 
 def save_to_network(df: pd.DataFrame, contrib_info: dict, nivel: str, progress_callback=None) -> tuple:
     """
@@ -4821,6 +4984,67 @@ def render_ranking_tab(engine, grupo: str):
             )
             fig.update_layout(xaxis_tickangle=-45, showlegend=False)
             st.plotly_chart(fig, use_container_width=True)
+
+    # =========================================================================
+    # EXPANDER: DIAGNÓSTICO DE REDE
+    # =========================================================================
+    with st.expander("🔧 Diagnóstico de Rede", expanded=False):
+        st.markdown("""
+        **Teste a conexão com a pasta de rede para salvar arquivos.**
+
+        Use este diagnóstico se estiver tendo problemas ao salvar na rede.
+        """)
+
+        st.code(REDE_PATH, language=None)
+
+        if st.button("🔍 Executar Diagnóstico", key=f"btn_diagnostico_{grupo}", type="primary"):
+            with st.spinner("Executando testes de conexão..."):
+                resultado = diagnostico_rede()
+
+            st.markdown(f"**Executado em:** {resultado['timestamp']}")
+            st.markdown(f"**Caminho:** `{resultado['rede_path']}`")
+
+            for teste in resultado['testes']:
+                if teste['status'] == 'OK':
+                    st.success(f"✅ **{teste['nome']}**: {teste['mensagem']}")
+                elif teste['status'] == 'AVISO':
+                    st.warning(f"⚠️ **{teste['nome']}**: {teste['mensagem']}")
+                else:
+                    st.error(f"❌ **{teste['nome']}**: {teste['mensagem']}")
+
+                if teste['detalhes']:
+                    with st.expander(f"Detalhes: {teste['nome']}", expanded=False):
+                        if isinstance(teste['detalhes'], list):
+                            st.write(teste['detalhes'])
+                        else:
+                            st.code(str(teste['detalhes']), language=None)
+
+            # Resumo
+            total_ok = sum(1 for t in resultado['testes'] if t['status'] == 'OK')
+            total_erro = sum(1 for t in resultado['testes'] if t['status'] == 'ERRO')
+            total_aviso = sum(1 for t in resultado['testes'] if t['status'] == 'AVISO')
+
+            st.markdown("---")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("✅ OK", total_ok)
+            with col2:
+                st.metric("⚠️ Avisos", total_aviso)
+            with col3:
+                st.metric("❌ Erros", total_erro)
+
+            if total_erro > 0:
+                st.error("""
+                **Problemas detectados!** Tente:
+                1. Acessar a pasta no Explorer do Windows primeiro
+                2. Fazer logout/login no Windows
+                3. Reiniciar o Streamlit
+                4. Verificar se a VPN está conectada (se aplicável)
+                """)
+            elif total_aviso > 0:
+                st.warning("Alguns avisos foram detectados, mas a conexão básica está funcionando.")
+            else:
+                st.success("✅ Todos os testes passaram! A conexão com a rede está funcionando corretamente.")
 
 
 def render_pesquisa_produtos_tab(engine, grupo: str):
