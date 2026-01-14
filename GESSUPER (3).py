@@ -72,18 +72,22 @@ RANKING_CACHE_TTL = 86400
 # Para adicionar um novo grupo, basta adicionar uma nova entrada neste dicionário.
 
 GRUPOS_CONFIG = {
-    "GESSUPER": {
-        "nome": "GESSUPER",
-        "nome_display": "Infrações GESSUPER",
-        "descricao": "Sistema de Infrações GESSUPER - Receita Estadual SC",
-        # Tabelas (com NFe para GESSUPER)
+    # =========================================================================
+    # GESSUPER NFC-e + Cupons - Para auditores especialistas em varejo/consumidor
+    # =========================================================================
+    "GESSUPER_NFCE": {
+        "nome": "GESSUPER_NFCE",
+        "nome_display": "GESSUPER (NFC-e + Cupons)",
+        "descricao": "Infrações GESSUPER - NFC-e e Cupons Fiscais (Varejo/Consumidor Final)",
+        "icone": "🧾",
+        # Apenas tabelas de NFC-e e Cupons
         "tabelas": {
             "nfce": "niat.infracoes_gessuper_nfce_3M",
-            "cupons": "niat.infracoes_gessuper_cupons_3M",
-            "nfe": "niat.infracoes_gessuper_nfe_3M"  # GESSUPER agora tem NFe
+            "cupons": "niat.infracoes_gessuper_cupons_3M"
+            # Não inclui NFe
         },
-        # Modelos de exportação (2 opções para GESSUPER)
-        "modelos_exportacao": ["Notas de Consumo", "NFe"],
+        # Modelo de exportação para Notas de Consumo
+        "modelos_exportacao": ["Notas de Consumo"],
         # Colunas específicas para export
         "export_config": {
             "Notas de Consumo": {
@@ -97,7 +101,47 @@ GRUPOS_CONFIG = {
                     "Cód. Tot. Par", "Legislação", "Valor da Operação", "Alíquota ICMS correta",
                     "Alíquota ICMS efetiva", "ICMS devido", "ICMS não-recolhido"
                 ]
-            },
+            }
+        },
+        # Índice de descrição dos campos
+        "indice_campos": [
+            ("Chave de acesso", "Número da chave de acesso das Notas Fiscais. Não aplicável para ECF."),
+            ("URL", "Link para acessar o documento fiscal (apenas Notas Fiscais)."),
+            ("Tipo Documento", "Fonte da informação: NFCe ou ECF."),
+            ("Data de emissão", "Data de emissão do documento (Cupom Fiscal: data da Redução Z)."),
+            ("Entrada ou saída", "Indica se a operação é de entrada ou saída."),
+            ("ECF-FAB", "Número de série do Emissor de Cupom Fiscal."),
+            ("GTIN", "Código GTIN da mercadoria."),
+            ("NCM", "Código NCM da mercadoria."),
+            ("No. Nota", "Número da Nota Fiscal."),
+            ("No. Item", "Número do item dentro da Nota Fiscal."),
+            ("Código do produto", "Código do produto declarado pelo contribuinte."),
+            ("Cód. Tot. Par", "Código totalizador (apenas ECF)."),
+            ("ICMS Destacado", "ICMS destacado no documento fiscal pelo contribuinte."),
+            ("Valor da operação", "Base de Cálculo calculada pelo fisco."),
+            ("Alíquota Efetiva Correta", "Alíquota de ICMS considerada pelo fisco."),
+            ("Alíquota Efetiva destacada", "Alíquota efetiva destacada pelo Contribuinte."),
+            ("ICMS devido", "Valor do ICMS considerado como correto pelo fisco."),
+            ("ICMS não-recolhido", "Diferença entre ICMS devido e ICMS destacado.")
+        ]
+    },
+    # =========================================================================
+    # GESSUPER NF-e - Para auditores especialistas em operações B2B
+    # =========================================================================
+    "GESSUPER_NFE": {
+        "nome": "GESSUPER_NFE",
+        "nome_display": "GESSUPER (NF-e)",
+        "descricao": "Infrações GESSUPER - NF-e (Operações entre empresas)",
+        "icone": "📄",
+        # Apenas tabela de NFe
+        "tabelas": {
+            "nfe": "niat.infracoes_gessuper_nfe_3M"
+            # Não inclui NFCe nem Cupons
+        },
+        # Modelo de exportação para NFe
+        "modelos_exportacao": ["NFe"],
+        # Colunas específicas para export
+        "export_config": {
             "NFe": {
                 "titulo_aba_dados": "ANEXO J1 - NOTAS DE SAÍDAS",
                 "titulo_aba_icms": "ANEXO J2 - ICMS DEVIDO",
@@ -119,18 +163,20 @@ GRUPOS_CONFIG = {
         },
         # Índice de descrição dos campos
         "indice_campos": [
-            ("Chave de acesso", "Número da chave de acesso das Notas Fiscais. Não aplicável para ECF."),
-            ("URL", "Link para acessar o documento fiscal (apenas Notas Fiscais)."),
-            ("Tipo Documento", "Fonte da informação: NFe, NFCe ou ECF."),
-            ("Data de emissão", "Data de emissão do documento (Cupom Fiscal: data da Redução Z)."),
+            ("Chave de acesso", "Número da chave de acesso das Notas Fiscais Eletrônicas."),
+            ("URL", "Link para acessar o documento fiscal."),
+            ("Tipo Documento", "Fonte da informação: NFe (Nota Fiscal Eletrônica)."),
+            ("Data de emissão", "Data de emissão do documento."),
             ("Entrada ou saída", "Indica se a operação é de entrada ou saída."),
-            ("ECF-FAB", "Número de série do Emissor de Cupom Fiscal."),
+            ("IE Emitente", "Inscrição Estadual do emitente."),
+            ("IE Destinatário", "Inscrição Estadual do destinatário."),
             ("GTIN", "Código GTIN da mercadoria."),
             ("NCM", "Código NCM da mercadoria."),
             ("No. Nota", "Número da Nota Fiscal."),
             ("No. Item", "Número do item dentro da Nota Fiscal."),
-            ("Código do produto", "Código do produto declarado pelo contribuinte."),
-            ("Cód. Tot. Par", "Código totalizador (apenas ECF)."),
+            ("Origem do Produto", "Indica se o produto é nacional ou estrangeiro."),
+            ("Ind Final", "Indica se o destinatário é consumidor final."),
+            ("TTD 409/410/411", "Indica se o TTD estava ativo para o contribuinte no período."),
             ("ICMS Destacado", "ICMS destacado no documento fiscal pelo contribuinte."),
             ("Valor da operação", "Base de Cálculo calculada pelo fisco."),
             ("Alíquota Efetiva Correta", "Alíquota de ICMS considerada pelo fisco."),
@@ -139,15 +185,19 @@ GRUPOS_CONFIG = {
             ("ICMS não-recolhido", "Diferença entre ICMS devido e ICMS destacado.")
         ]
     },
+    # =========================================================================
+    # GESMAC - Sistema separado com todas as modalidades
+    # =========================================================================
     "GESMAC": {
         "nome": "GESMAC",
-        "nome_display": "Infrações GESMAC",
+        "nome_display": "GESMAC",
         "descricao": "Sistema de Infrações GESMAC - Receita Estadual SC",
-        # Tabelas (com NFe para GESMAC)
+        "icone": "📊",
+        # Tabelas (com NFe, NFCe e Cupons para GESMAC)
         "tabelas": {
             "nfce": "niat.infracoes_gesmac_nfce_3m",
             "cupons": "niat.infracoes_gesmac_cupons_3m",
-            "nfe": "niat.infracoes_gesmac_nfe_3m"  # GESMAC tem NFe
+            "nfe": "niat.infracoes_gesmac_nfe_3m"
         },
         # Modelo de exportação único com todas as modalidades (NFe + NFCe + Cupons)
         "modelos_exportacao": ["Anexo J"],
@@ -200,8 +250,17 @@ GRUPOS_CONFIG = {
     }
 }
 
-# Grupo padrão
-GRUPO_PADRAO = "GESSUPER"
+# Mapeamento para compatibilidade - mapeia nome base para variantes
+GRUPO_BASE_MAP = {
+    "GESSUPER": ["GESSUPER_NFCE", "GESSUPER_NFE"],
+    "GESMAC": ["GESMAC"]
+}
+
+# Grupo padrão (primeiro grupo na lista)
+GRUPO_PADRAO = "GESSUPER_NFCE"
+
+# Lista ordenada dos grupos para exibição nas abas
+GRUPOS_ORDENADOS = ["GESSUPER_NFCE", "GESSUPER_NFE", "GESMAC"]
 
 
 # =============================================================================
@@ -365,6 +424,25 @@ def get_grupo_tabelas(grupo: str = None) -> dict:
     """
     config = get_grupo_config(grupo)
     return config.get('tabelas', {})
+
+
+def is_gesmac_grupo(grupo: str = None) -> bool:
+    """
+    Verifica se o grupo é do tipo GESMAC.
+    Retorna True para GESMAC, False para GESSUPER_NFCE, GESSUPER_NFE, etc.
+    """
+    if grupo is None:
+        grupo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
+    return grupo == "GESMAC"
+
+
+def is_gessuper_nfe_grupo(grupo: str = None) -> bool:
+    """
+    Verifica se o grupo é GESSUPER_NFE (usa colunas estendidas de NF-e).
+    """
+    if grupo is None:
+        grupo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
+    return grupo == "GESSUPER_NFE"
 
 
 def check_tables_available(engine, grupo: str = None) -> bool:
@@ -649,7 +727,7 @@ def get_base_df(_engine, identificador_digits: str, nivel: str = "BAIXA", grupo:
 
     # Query NFCe (comum a GESSUPER e GESMAC)
     if tabelas.get('nfce') and (tipo_doc_filter is None or tipo_doc_filter == 'NFCe'):
-        if grupo == "GESMAC":
+        if is_gesmac_grupo(grupo):
             query_nfce = f"""
                 SELECT
                     data_emissao,
@@ -753,7 +831,7 @@ def get_base_df(_engine, identificador_digits: str, nivel: str = "BAIXA", grupo:
 
     # Query Cupons (comum a GESSUPER e GESMAC)
     if tabelas.get('cupons') and (tipo_doc_filter is None or tipo_doc_filter == 'Cupom'):
-        if grupo == "GESMAC":
+        if is_gesmac_grupo(grupo):
             query_cupons = f"""
                 SELECT
                     data_emissao,
@@ -857,7 +935,7 @@ def get_base_df(_engine, identificador_digits: str, nivel: str = "BAIXA", grupo:
 
     # Query NFe (GESMAC e GESSUPER quando configurado)
     if tabelas.get('nfe') and (tipo_doc_filter is None or tipo_doc_filter == 'NFe'):
-        if grupo == "GESMAC":
+        if is_gesmac_grupo(grupo):
             query_nfe = f"""
                 SELECT
                     data_emissao,
@@ -1088,7 +1166,7 @@ def build_export_df(df: pd.DataFrame, nivel_str: str, grupo: str = None, modelo_
     # Define colunas de exportação baseado no grupo e modelo
     # GESMAC sempre usa colunas estendidas
     # GESSUPER usa colunas estendidas para NFe e colunas padrão para Notas de Consumo
-    usar_colunas_estendidas = (grupo == "GESMAC") or (grupo == "GESSUPER" and modelo_export == "NFe")
+    usar_colunas_estendidas = is_gesmac_grupo(grupo) or is_gessuper_nfe_grupo(grupo)
 
     if usar_colunas_estendidas:
         # Colunas estendidas para NFe (GESMAC ou GESSUPER NFe)
@@ -4108,57 +4186,338 @@ def render_pesquisa_produtos(engine):
 
 
 # =============================================================================
+# 9.1. FUNÇÕES DE RENDERIZAÇÃO POR ABA (OPERAÇÃO FISCAL)
+# =============================================================================
+
+
+def render_ranking_tab(engine, grupo: str):
+    """
+    Renderiza a página de Ranking de Empresas para uma operação fiscal específica.
+    """
+    nav_page_key = f'nav_page_{grupo}'
+    grupo_config = GRUPOS_CONFIG[grupo]
+
+    # Limpa flag de tabela indisponível
+    st.session_state.tabela_indisponivel = False
+
+    # Verificação de disponibilidade das tabelas
+    if not check_tables_available(engine, grupo):
+        col_title, col_btn1, col_btn2 = st.columns([3, 1, 1])
+        with col_title:
+            st.markdown(f"## 🏆 Ranking - {grupo_config['nome_display']}")
+        with col_btn1:
+            if st.button("🔍 Consulta", use_container_width=True, type="secondary", key=f"ranking_btn_consulta_{grupo}"):
+                st.session_state[nav_page_key] = "consulta"
+                st.rerun()
+        with col_btn2:
+            if st.button("🔎 Produtos", use_container_width=True, type="secondary", key=f"ranking_btn_produtos_{grupo}"):
+                st.session_state[nav_page_key] = "produtos"
+                st.rerun()
+        st.warning(TABLE_UNAVAILABLE_MSG)
+        return
+
+    # Header com botões de navegação
+    col_title, col_btn1, col_btn2 = st.columns([3, 1, 1])
+
+    with col_title:
+        st.markdown(f"## 🏆 Ranking de Empresas")
+        st.caption(f"📊 {grupo_config['descricao']}")
+
+    with col_btn1:
+        if st.button("🔍 Consulta", use_container_width=True, type="secondary", key=f"ranking_btn_consulta2_{grupo}"):
+            st.session_state[nav_page_key] = "consulta"
+            st.rerun()
+
+    with col_btn2:
+        if st.button("🔎 Produtos", use_container_width=True, type="secondary", key=f"ranking_btn_produtos2_{grupo}"):
+            st.session_state[nav_page_key] = "produtos"
+            st.rerun()
+
+    # Usa nível ALTA fixo (maior confiabilidade)
+    nivel = "ALTA"
+
+    st.caption("📊 Nível: **🟢 ALTA** (maior confiabilidade) | Dados agregados por empresa e ano | Cache: 24h")
+
+    with st.spinner("Carregando ranking..."):
+        df_valor, df_qtd, stats = get_ranking_data(engine, nivel, top_n=100, _cache_version=8, grupo=grupo)
+
+    if df_valor is None:
+        st.warning("Não foi possível carregar o ranking.")
+        return
+
+    # KPIs PRINCIPAIS
+    st.markdown("### 📈 Visão Geral")
+
+    col1, col2, col3, col4, col5 = st.columns(5)
+    with col1:
+        st.metric(
+            "💰 Valor Total",
+            format_currency_br(stats['total_geral']),
+            help="Soma de TODAS as infrações no nível selecionado"
+        )
+    with col2:
+        pct_top100 = (stats['total_top_n'] / stats['total_geral'] * 100) if stats['total_geral'] > 0 else 0
+        st.metric(
+            "🏆 Top 100",
+            format_currency_br(stats['total_top_n']),
+            delta=f"{pct_top100:.1f}% do total",
+            help="Soma das 100 maiores empresas"
+        )
+    with col3:
+        st.metric(
+            "🏢 Empresas",
+            f"{stats['qtd_empresas_total']:,}",
+            delta=f"Top 100 de {stats['qtd_empresas_total']:,}",
+            delta_color="off",
+            help="Total de empresas com infrações"
+        )
+    with col4:
+        st.metric(
+            "📋 Total de Itens",
+            f"{stats['total_itens']:,}",
+            help="Quantidade total de itens/registros"
+        )
+    with col5:
+        st.metric(
+            "📅 Período",
+            f"{min(stats['anos'])} - {max(stats['anos'])}",
+            help="Anos disponíveis nos dados"
+        )
+
+    st.markdown("---")
+
+    # Formata tabela para exibição
+    df_display = df_valor.copy()
+    df_display.columns = [str(col) for col in df_display.columns]
+
+    # Ordena por TOTAL decrescente
+    indices_ordenados = df_display['TOTAL'].values.argsort()[::-1]
+    df_display = df_display.iloc[indices_ordenados].reset_index(drop=True)
+
+    # Adiciona posição
+    df_display.insert(0, '#', range(1, len(df_display) + 1))
+
+    # Renomeia colunas
+    df_display = df_display.rename(columns={
+        'cnpj_emitente': 'CNPJ',
+        'razao_emitente': 'Razão Social'
+    })
+
+    # Trunca razão social
+    df_display['Razão Social'] = df_display['Razão Social'].apply(
+        lambda x: x[:40] + '...' if pd.notna(x) and len(str(x)) > 40 else x
+    )
+
+    # Colunas de anos
+    anos_cols = [str(ano) for ano in stats['anos']]
+
+    # Calcula percentuais
+    for ano in anos_cols:
+        if ano in df_display.columns:
+            col_pct = f'{ano}%'
+            df_display[col_pct] = (df_display[ano] / df_display['TOTAL'] * 100).round(1)
+            df_display[col_pct] = df_display[col_pct].fillna(0)
+
+    # TABELA DO RANKING
+    st.markdown("### 🏅 Top 100 Empresas")
+
+    col_ordem, col_info = st.columns([1, 5])
+
+    with col_ordem:
+        opcoes_ordenacao = ["TOTAL"] + anos_cols
+        ano_selecionado = st.selectbox(
+            "Ordenação",
+            options=opcoes_ordenacao,
+            format_func=lambda x: f"📊 TOTAL" if x == "TOTAL" else f"📅 {x}",
+            key=f"ranking_ordenar_por_{grupo}",
+            label_visibility="collapsed"
+        )
+
+    with col_info:
+        if ano_selecionado == "TOTAL":
+            st.caption("📊 Ordenado pelo **valor total** (todos os anos)")
+        else:
+            st.caption(f"📅 Ordenado pelo **% em {ano_selecionado}** (maior concentração neste ano)")
+
+    # Reordena se necessário
+    if ano_selecionado != "TOTAL":
+        col_pct_ordenar = f'{ano_selecionado}%'
+        df_display = df_display.sort_values(by=col_pct_ordenar, ascending=False, ignore_index=True)
+        df_display['#'] = range(1, len(df_display) + 1)
+
+    # Reordena colunas
+    cols_ordenadas = ['#', 'CNPJ', 'Razão Social']
+    for ano in anos_cols:
+        if ano in df_display.columns:
+            cols_ordenadas.append(ano)
+            cols_ordenadas.append(f'{ano}%')
+    cols_ordenadas.append('TOTAL')
+
+    df_display = df_display[cols_ordenadas]
+
+    # Configura colunas para exibição
+    column_config = {
+        '#': st.column_config.NumberColumn('#', width='small'),
+        'CNPJ': st.column_config.TextColumn('CNPJ', width='medium'),
+        'Razão Social': st.column_config.TextColumn('Razão Social', width='large'),
+        'TOTAL': st.column_config.NumberColumn('TOTAL', format="R$ %.2f"),
+    }
+
+    for ano in anos_cols:
+        if ano in df_display.columns:
+            label = f"⭐{ano}" if ano == ano_selecionado else ano
+            column_config[ano] = st.column_config.NumberColumn(label, format="R$ %.2f")
+            label_pct = f"⭐{ano}%" if ano == ano_selecionado else f'{ano}%'
+            column_config[f'{ano}%'] = st.column_config.NumberColumn(label_pct, format="%.1f%%")
+
+    st.dataframe(
+        df_display,
+        use_container_width=True,
+        hide_index=True,
+        height=500,
+        column_config=column_config
+    )
+
+    st.caption("💡 Clique no cabeçalho da coluna para ordenar.")
+
+
+def render_pesquisa_produtos_tab(engine, grupo: str):
+    """
+    Renderiza a página de Pesquisa de Produtos para uma operação fiscal específica.
+    """
+    nav_page_key = f'nav_page_{grupo}'
+    grupo_config = GRUPOS_CONFIG[grupo]
+
+    # Header com navegação
+    col_title, col_btn1, col_btn2 = st.columns([3, 1, 1])
+
+    with col_title:
+        st.markdown("## 🔎 Pesquisa de Produtos")
+        st.caption(f"📊 {grupo_config['descricao']}")
+
+    with col_btn1:
+        if st.button("🏆 Ranking", use_container_width=True, type="secondary", key=f"produtos_btn_ranking_{grupo}"):
+            st.session_state[nav_page_key] = "ranking"
+            st.rerun()
+
+    with col_btn2:
+        if st.button("🔍 Consulta", use_container_width=True, type="secondary", key=f"produtos_btn_consulta_{grupo}"):
+            st.session_state[nav_page_key] = "consulta"
+            st.rerun()
+
+    st.markdown("---")
+
+    # Campo de pesquisa
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        termo_busca = st.text_input(
+            "Buscar produto por descrição",
+            placeholder="Digite parte do nome do produto (mín. 3 caracteres)...",
+            key=f"produtos_busca_{grupo}",
+            label_visibility="collapsed"
+        )
+    with col2:
+        nivel_busca = st.selectbox(
+            "Nível",
+            options=["ALTA", "MEDIA", "BAIXA"],
+            format_func=lambda x: {"BAIXA": "🔴 BAIXA", "MEDIA": "🟡 MÉDIA", "ALTA": "🟢 ALTA"}[x],
+            key=f"produtos_nivel_{grupo}",
+            index=0,
+            label_visibility="collapsed"
+        )
+
+    if len(termo_busca) >= 3:
+        with st.spinner(f"Buscando produtos com '{termo_busca}'..."):
+            df_produtos = search_products_by_description(engine, termo_busca, limit=5000, grupo=grupo)
+
+        if df_produtos is not None and not df_produtos.empty:
+            # Converte infracao para numérico
+            df_produtos['infracao_ia'] = pd.to_numeric(df_produtos.get('infracao_baixa', 0), errors='coerce').fillna(0)
+            st.success(f"✅ Encontrados {len(df_produtos):,} registros para '{termo_busca}'")
+
+            # Agrupamento por empresa
+            df_agrupado = df_produtos.groupby(['cnpj_emitente', 'razao_emitente']).agg({
+                'infracao_ia': 'sum',
+                'descricao': 'count'
+            }).reset_index()
+            df_agrupado.columns = ['CNPJ', 'Razão Social', 'Valor Total', 'Qtd Itens']
+            df_agrupado = df_agrupado.sort_values('Valor Total', ascending=False)
+
+            st.markdown("### 🏢 Empresas com este produto")
+            st.dataframe(
+                df_agrupado.head(50),
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    'Valor Total': st.column_config.NumberColumn('Valor Total', format="R$ %.2f")
+                }
+            )
+
+            if len(df_agrupado) > 50:
+                st.caption(f"⚠️ Exibindo 50 de {len(df_agrupado)} empresas")
+        else:
+            st.warning(f"Nenhum produto encontrado para '{termo_busca}'")
+    elif termo_busca:
+        st.info("Digite pelo menos 3 caracteres para buscar")
+    else:
+        st.info("🔎 Digite o nome de um produto para buscar nas infrações")
+
+
+# =============================================================================
 # 10. INTERFACE PRINCIPAL
 # =============================================================================
 
 
 def main():
-    """Interface principal com navegação em tabs na área principal."""
-    
+    """Interface principal com navegação em abas por operação fiscal."""
+
     # =========================================================================
     # GERENCIAMENTO DE MEMÓRIA AUTOMÁTICO
     # =========================================================================
-    
+
     if 'last_activity' not in st.session_state:
         st.session_state.last_activity = datetime.now()
-    
+
     time_since_activity = datetime.now() - st.session_state.last_activity
     if time_since_activity > timedelta(minutes=SESSION_TIMEOUT_MINUTES):
         if st.session_state.get('consulta_dados') is not None:
             st.session_state.consulta_dados = None
-            keys_to_clear = [k for k in st.session_state.keys() 
+            keys_to_clear = [k for k in st.session_state.keys()
                            if k.startswith(('excel_data_', 'network_save_', 'local_save_', 'analise_'))]
             for key in keys_to_clear:
                 del st.session_state[key]
             st.cache_data.clear()
             gc.collect()
-    
+
     st.session_state.last_activity = datetime.now()
-    
-    if 'consulta_dados' not in st.session_state:
-        st.session_state.consulta_dados = None
-    
+
+    # Inicializa estados para cada grupo (cada aba tem seu próprio estado)
+    for grupo in GRUPOS_ORDENADOS:
+        if f'consulta_dados_{grupo}' not in st.session_state:
+            st.session_state[f'consulta_dados_{grupo}'] = None
+        if f'nav_page_{grupo}' not in st.session_state:
+            st.session_state[f'nav_page_{grupo}'] = "ranking"
+
     # Flag para indicar tabelas indisponíveis
     if 'tabela_indisponivel' not in st.session_state:
         st.session_state.tabela_indisponivel = False
-    
-    # Variável de controle para navegação (separada do widget)
-    if 'nav_page' not in st.session_state:
-        st.session_state.nav_page = "ranking"  # Default: ranking
 
-    # Grupo selecionado (GESSUPER, GESMAC, etc.)
+    # Compatibilidade com código antigo
+    if 'consulta_dados' not in st.session_state:
+        st.session_state.consulta_dados = None
+    if 'nav_page' not in st.session_state:
+        st.session_state.nav_page = "ranking"
     if 'grupo_selecionado' not in st.session_state:
         st.session_state.grupo_selecionado = GRUPO_PADRAO
 
     engine = get_engine()
     if engine is None:
         st.stop()
-    
+
     # =========================================================================
-    # CSS PARA SIDEBAR SEMPRE COLAPSADO
+    # CSS CUSTOMIZADO PARA ABAS PRINCIPAIS E SIDEBAR
     # =========================================================================
-    
-    # Sidebar sempre inicia colapsado - usuário abre quando quiser
+
     st.markdown("""
     <style>
         /* Sidebar sempre colapsado por padrão */
@@ -4186,67 +4545,63 @@ def main():
             cursor: pointer;
             z-index: 1000;
         }
+
+        /* Estilo das abas principais (operações fiscais) */
+        div[data-testid="stTabs"] > div[role="tablist"] {
+            background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
+            padding: 0.5rem 1rem;
+            border-radius: 10px 10px 0 0;
+            gap: 0 !important;
+        }
+
+        div[data-testid="stTabs"] > div[role="tablist"] > button {
+            color: rgba(255,255,255,0.7) !important;
+            font-weight: 600 !important;
+            font-size: 1rem !important;
+            padding: 0.75rem 1.5rem !important;
+            border-radius: 8px 8px 0 0 !important;
+            margin-right: 4px !important;
+        }
+
+        div[data-testid="stTabs"] > div[role="tablist"] > button[aria-selected="true"] {
+            color: white !important;
+            background: rgba(255,255,255,0.2) !important;
+            border-bottom: 3px solid #FFD700 !important;
+        }
+
+        div[data-testid="stTabs"] > div[role="tablist"] > button:hover {
+            color: white !important;
+            background: rgba(255,255,255,0.1) !important;
+        }
     </style>
     """, unsafe_allow_html=True)
-    
-    # =========================================================================
-    # SIDEBAR - INFORMAÇÕES E SISTEMA
-    # =========================================================================
-    
-    with st.sidebar:
-        # Obtém configuração do grupo atual
-        grupo_atual = st.session_state.grupo_selecionado
-        grupo_config = get_grupo_config(grupo_atual)
 
-        st.markdown(f"""
+    # =========================================================================
+    # SIDEBAR - INFORMAÇÕES E SISTEMA (SEM SELETOR DE GRUPO)
+    # =========================================================================
+
+    with st.sidebar:
+        st.markdown("""
         <div style='text-align: center; padding: 0.5rem 0; border-bottom: 2px solid #1565C0; margin-bottom: 1rem;'>
             <h2 style='color: #1565C0; margin: 0;'>🎯 ARGOS</h2>
-            <p style='color: #666; margin: 0; font-size: 0.8rem;'>{grupo_config['nome_display']}</p>
+            <p style='color: #666; margin: 0; font-size: 0.8rem;'>Operação Fiscal</p>
         </div>
         """, unsafe_allow_html=True)
 
-        # Seletor de grupo
-        st.markdown("### 🏢 Grupo")
-        grupos_disponiveis = list(GRUPOS_CONFIG.keys())
-        grupo_idx = grupos_disponiveis.index(grupo_atual) if grupo_atual in grupos_disponiveis else 0
-
-        novo_grupo = st.selectbox(
-            "Selecione o grupo",
-            options=grupos_disponiveis,
-            index=grupo_idx,
-            key="grupo_selector",
-            label_visibility="collapsed"
-        )
-
-        # Atualiza o grupo selecionado se mudou
-        if novo_grupo != grupo_atual:
-            st.session_state.grupo_selecionado = novo_grupo
-            # Limpa dados da consulta anterior ao trocar de grupo
-            st.session_state.consulta_dados = None
-            # Limpa caches específicos do grupo
-            keys_to_clear = [k for k in st.session_state.keys()
-                           if k.startswith(('excel_data_', 'analise_agg_'))]
-            for key in keys_to_clear:
-                del st.session_state[key]
-            st.cache_data.clear()
-            st.rerun()
-
-        st.markdown("---")
-
         # Informações sobre os níveis de acurácia
         st.markdown("### 📊 Níveis de Acurácia")
-        
+
         st.success("**🟢 ALTA**\n\nConsenso das 3 IAs\n\n*1-2% de erros esperados*")
         st.warning("**🟡 MÉDIA**\n\nMaioria 2x1\n\n*Até 5% de erros*")
         st.error("**🔴 BAIXA**\n\nIAs divergentes\n\n*Requer avaliação manual!*")
-        
+
         st.markdown("---")
-        
+
         # Sistema
         with st.expander("⚙️ Sistema", expanded=False):
             st.caption(f"Cache consulta: {CACHE_TTL_SECONDS//60} min")
             st.caption(f"Cache ranking: 24h")
-            
+
             if st.button("🧹 Limpar Cache", use_container_width=True):
                 st.cache_data.clear()
                 st.cache_resource.clear()
@@ -4254,106 +4609,134 @@ def main():
                     del st.session_state[key]
                 gc.collect()
                 st.rerun()
-            
-            if st.session_state.get('consulta_dados'):
-                df_mem = st.session_state.consulta_dados.get('df')
+
+            # Mostra memória do grupo ativo
+            grupo_ativo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
+            dados_grupo = st.session_state.get(f'consulta_dados_{grupo_ativo}') or st.session_state.get('consulta_dados')
+            if dados_grupo:
+                df_mem = dados_grupo.get('df')
                 if df_mem is not None:
                     mem_mb = df_mem.memory_usage(deep=True).sum() / 1024 / 1024
                     st.info(f"📊 {mem_mb:.1f} MB ({len(df_mem):,} linhas)")
         
         st.markdown("---")
         st.caption("Receita Estadual de SC")
-    
-    # Variáveis para compatibilidade
-    nav_page = st.session_state.nav_page
-    nivel = "ALTA"  # Valor padrão, será sobrescrito pelas páginas
-    consultar = False
-    identificador = ""
-    
-    # =========================================================================
-    # ÁREA PRINCIPAL - RANKING, CONSULTA OU PRODUTOS
-    # =========================================================================
-    
-    # Se está no modo Ranking
-    if nav_page == "ranking":
-        render_ranking(engine, nivel)
-        st.stop()
-    
-    # Se está no modo Pesquisa de Produtos
-    if nav_page == "produtos":
-        render_pesquisa_produtos(engine)
-        st.stop()
-    
-    # =========================================================================
-    # EXIBE CONTEÚDO
-    # =========================================================================
-    
-    # Obtém configuração do grupo para uso na página principal
-    grupo_cfg_main = get_grupo_config()
 
-    if st.session_state.consulta_dados is None:
+    # =========================================================================
+    # HEADER PRINCIPAL
+    # =========================================================================
+
+    st.markdown("""
+    <div style='text-align: center; margin-bottom: 0.5rem;'>
+        <h1 style='color: #1565C0; margin: 0;'>🎯 Operação ARGOS</h1>
+        <p style='color: #666; margin: 0;'>Selecione a operação fiscal para análise</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # =========================================================================
+    # ABAS PRINCIPAIS - OPERAÇÕES FISCAIS
+    # =========================================================================
+
+    # Cria as abas para cada operação fiscal
+    tab_labels = [f"{GRUPOS_CONFIG[g].get('icone', '📊')} {GRUPOS_CONFIG[g]['nome_display']}" for g in GRUPOS_ORDENADOS]
+    tabs = st.tabs(tab_labels)
+
+    # Renderiza cada aba com seu grupo específico
+    for idx, grupo in enumerate(GRUPOS_ORDENADOS):
+        with tabs[idx]:
+            # Atualiza o grupo selecionado no session_state para este contexto
+            st.session_state.grupo_selecionado = grupo
+
+            # Renderiza o conteúdo da operação fiscal
+            render_operacao_fiscal(engine, grupo)
+
+
+def render_operacao_fiscal(engine, grupo: str):
+    """
+    Renderiza o conteúdo de uma operação fiscal específica.
+    Cada aba (GESSUPER NFC-e, GESSUPER NF-e, GESMAC) chama esta função.
+    """
+    grupo_config = GRUPOS_CONFIG[grupo]
+
+    # Obtém estados específicos do grupo
+    nav_page_key = f'nav_page_{grupo}'
+    consulta_dados_key = f'consulta_dados_{grupo}'
+
+    nav_page = st.session_state.get(nav_page_key, "ranking")
+
+    # =========================================================================
+    # NAVEGAÇÃO - RANKING, CONSULTA OU PRODUTOS
+    # =========================================================================
+
+    if nav_page == "ranking":
+        render_ranking_tab(engine, grupo)
+        return
+
+    if nav_page == "produtos":
+        render_pesquisa_produtos_tab(engine, grupo)
+        return
+
+    # =========================================================================
+    # PÁGINA DE CONSULTA
+    # =========================================================================
+
+    consulta_dados = st.session_state.get(consulta_dados_key)
+
+    if consulta_dados is None:
         # Header compacto com botões de navegação
         col_title, col_btn1, col_btn2 = st.columns([3, 1, 1])
         with col_title:
             st.markdown(f"""
-            <h2 style='color: #1565C0; margin: 0;'>🎯 Operação ARGOS</h2>
-            <p style='color: #666; margin: 0; font-size: 0.9rem;'>{grupo_cfg_main['descricao']}</p>
+            <p style='color: #666; margin: 0; font-size: 0.9rem;'>{grupo_config['descricao']}</p>
             """, unsafe_allow_html=True)
         with col_btn1:
-            if st.button("🏆 Ranking", use_container_width=True, type="secondary"):
-                st.session_state.nav_page = "ranking"
+            if st.button("🏆 Ranking", use_container_width=True, type="secondary", key=f"btn_ranking_{grupo}"):
+                st.session_state[nav_page_key] = "ranking"
                 st.rerun()
         with col_btn2:
-            if st.button("🔎 Produtos", use_container_width=True, type="secondary"):
-                st.session_state.nav_page = "produtos"
+            if st.button("🔎 Produtos", use_container_width=True, type="secondary", key=f"btn_produtos_{grupo}"):
+                st.session_state[nav_page_key] = "produtos"
                 st.rerun()
-        
+
         st.markdown("---")
-        
-        # =====================================================================
-        # VERIFICAÇÃO DE DISPONIBILIDADE DAS TABELAS
-        # =====================================================================
-        # Limpa flag de tabela indisponível
+
+        # Verificação de disponibilidade das tabelas
         st.session_state.tabela_indisponivel = False
-        
-        if not check_tables_available(engine):
+
+        if not check_tables_available(engine, grupo):
             st.warning(TABLE_UNAVAILABLE_MSG)
-            st.stop()
-        
-        # =====================================================================
-        # CAMPO DE CONSULTA COMPACTO E CENTRALIZADO
-        # =====================================================================
+            return
+
+        # Campo de consulta
         col_esq, col_form, col_dir = st.columns([1, 3, 1])
-        
+
         with col_form:
             st.markdown("### 🔍 Consultar Empresa")
-            
-            # Campo e seletor lado a lado
+
             col_input, col_nivel = st.columns([2, 1])
-            
+
             with col_input:
-                # Verifica se há CNPJ pré-preenchido (vindo da página de produtos)
-                valor_inicial = st.session_state.pop('cnpj_pre_preenchido', '')
+                valor_inicial = st.session_state.pop(f'cnpj_pre_preenchido_{grupo}', '')
                 cnpj_ie_input = st.text_input(
                     "CNPJ ou IE",
                     value=valor_inicial,
                     placeholder="00.000.000/0000-00 ou 000000000",
-                    key="cnpj_input_principal",
+                    key=f"cnpj_input_{grupo}",
                     label_visibility="collapsed"
                 )
-            
+
             with col_nivel:
                 nivel_consulta_principal = st.selectbox(
                     "Nível",
                     options=["ALTA", "MEDIA", "BAIXA"],
                     format_func=lambda x: {"BAIXA": "🔴 BAIXA", "MEDIA": "🟡 MÉDIA", "ALTA": "🟢 ALTA"}[x],
-                    key="nivel_input_principal",
+                    key=f"nivel_input_{grupo}",
                     index=0,
                     label_visibility="collapsed"
                 )
-            
+
             # Botão de consulta
-            if st.button("🔎 CONSULTAR", type="primary", use_container_width=True):
+            if st.button("🔎 CONSULTAR", type="primary", use_container_width=True, key=f"btn_consultar_{grupo}"):
                 if cnpj_ie_input:
                     ident_digits = sanitize_identificador(cnpj_ie_input)
                     if ident_digits:
@@ -4390,7 +4773,7 @@ def main():
                                     st.warning(f"⚠️ Nenhum registro para: {cnpj_ie_input}")
                                 else:
                                     status.update(label=f"✅ {len(df):,} registros", state="complete", expanded=False)
-                                    st.session_state.consulta_dados = {
+                                    st.session_state[consulta_dados_key] = {
                                         'df': df,
                                         'contrib_info': contrib_info,
                                         'ident_digits': ident_digits,
@@ -4402,7 +4785,7 @@ def main():
                         st.error("⚠️ CNPJ ou IE inválido.")
                 else:
                     st.warning("⚠️ Digite um CNPJ ou IE.")
-        
+
         # Cards de níveis compactos
         st.markdown("---")
         col1, col2, col3 = st.columns(3)
@@ -4412,18 +4795,18 @@ def main():
             st.warning("**🟡 MÉDIA** - Maioria 2x1 (até 5% erros)")
         with col3:
             st.error("**🔴 BAIXA** - IAs divergentes ⚠️")
-        
+
     else:
-        dados = st.session_state.consulta_dados
+        dados = consulta_dados
         df = dados['df']
         contrib_info = dados['contrib_info']
         ident_digits = dados['ident_digits']
         identificador_consulta = dados['identificador']
         nivel_consulta = dados['nivel']
-        
+
         nivel_atual = nivel_consulta
         total_nivel, cfg, has_rows = calcular_totais(df, nivel_atual)
-        
+
         if contrib_info:
             razao_social = contrib_info.get('razao_social', 'N/A')
             cnpj_formatado = contrib_info.get('cnpj', identificador_consulta)
@@ -4436,22 +4819,22 @@ def main():
             ie_formatado = ''
             municipio = ''
             gerfe = ''
-        
+
         # =====================================================================
         # HEADER FIXO COM BOTÕES
         # =====================================================================
         col_header, col_btn1, col_btn2, col_btn3 = st.columns([3, 1, 1, 1])
         with col_btn1:
-            if st.button("🔍 Nova Consulta", use_container_width=True, type="secondary"):
-                st.session_state.consulta_dados = None
+            if st.button("🔍 Nova Consulta", use_container_width=True, type="secondary", key=f"btn_nova_consulta_{grupo}"):
+                st.session_state[consulta_dados_key] = None
                 st.rerun()
         with col_btn2:
-            if st.button("🏆 Ranking", use_container_width=True, type="secondary"):
-                st.session_state.nav_page = "ranking"
+            if st.button("🏆 Ranking", use_container_width=True, type="secondary", key=f"btn_ranking2_{grupo}"):
+                st.session_state[nav_page_key] = "ranking"
                 st.rerun()
         with col_btn3:
-            if st.button("🔎 Produtos", use_container_width=True, type="secondary"):
-                st.session_state.nav_page = "produtos"
+            if st.button("🔎 Produtos", use_container_width=True, type="secondary", key=f"btn_produtos2_{grupo}"):
+                st.session_state[nav_page_key] = "produtos"
                 st.rerun()
         
         st.markdown(f"""
