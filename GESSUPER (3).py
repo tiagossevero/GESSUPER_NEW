@@ -1063,13 +1063,20 @@ def build_export_df(df: pd.DataFrame, nivel_str: str, grupo: str = None, modelo_
         df_export['aliquota_ia_icms'] = df_export[col_aliquota]
         df_export['icms_devido'] = pd.to_numeric(df_export[col_infracao], errors='coerce').fillna(0)
 
-    # Calcula ICMS não recolhido (ICMS devido - ICMS destacado)
+    # Calcula ICMS destacado
     if 'icms_destacado' in df_export.columns:
         icms_destacado = pd.to_numeric(df_export['icms_destacado'], errors='coerce').fillna(0)
     else:
         icms_destacado = pd.to_numeric(df_export['icms_emitente'], errors='coerce').fillna(0)
 
-    df_export['icms_nao_recolhido'] = df_export['icms_devido'] - icms_destacado
+    # Calcula ICMS devido usando a mesma fórmula do Excel: BC Fisco * Alíquota
+    # (para garantir que o filtro seja consistente com o que aparece no Excel)
+    bc_fisco = pd.to_numeric(df_export['bc_fisco'], errors='coerce').fillna(0)
+    aliquota = pd.to_numeric(df_export['aliquota_ia_icms'], errors='coerce').fillna(0) / 100  # Converte % para decimal
+    icms_devido_calc = (bc_fisco * aliquota).round(2)
+
+    # Calcula ICMS não recolhido (ICMS devido - ICMS destacado)
+    df_export['icms_nao_recolhido'] = (icms_devido_calc - icms_destacado).round(2)
     df_export['icms_nao_recolhido'] = df_export['icms_nao_recolhido'].clip(lower=0)  # Não pode ser negativo
 
     # Filtra apenas registros com ICMS não-recolhido > 0 (remove zeros e negativos)
@@ -1326,15 +1333,15 @@ def export_to_excel_template(df: pd.DataFrame, contrib_info: dict, nivel: str, p
         cell_v.number_format = '0.00%'
         cell_v.border = thin_border
         
-        # Fórmula para ICMS devido (coluna W) = BC Fisco * Alíquota ICMS correta
+        # Fórmula para ICMS devido (coluna W) = ROUND(BC Fisco * Alíquota ICMS correta, 2)
         cell_w = ws1.cell(row=row_idx, column=23)  # Coluna W
-        cell_w.value = f"=T{row_idx}*U{row_idx}"
+        cell_w.value = f"=ROUND(T{row_idx}*U{row_idx},2)"
         cell_w.number_format = '#,##0.00'
         cell_w.border = thin_border
-        
-        # Fórmula para ICMS não-recolhido (coluna X) = ICMS devido - ICMS destacado
+
+        # Fórmula para ICMS não-recolhido (coluna X) = MAX(0, ICMS devido - ICMS destacado)
         cell_x = ws1.cell(row=row_idx, column=24)  # Coluna X
-        cell_x.value = f"=W{row_idx}-P{row_idx}"
+        cell_x.value = f"=MAX(0,ROUND(W{row_idx}-P{row_idx},2))"
         cell_x.number_format = '#,##0.00'
         cell_x.border = thin_border
     
