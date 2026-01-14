@@ -692,6 +692,9 @@ def get_base_df(_engine, identificador_digits: str, nivel: str = "BAIXA", grupo:
         - infracao_X -> infracao_ia
 
     Filtra apenas registros onde infracao_X IS NOT NULL e != 'EXCLUIR'
+
+    OTIMIZAÇÃO: GESSUPER usa queries simplificadas (~23 colunas) para melhor performance.
+    GESMAC usa queries completas (~43 colunas) com todas as informações necessárias.
     """
     # Obtém configuração do grupo
     if grupo is None:
@@ -715,113 +718,49 @@ def get_base_df(_engine, identificador_digits: str, nivel: str = "BAIXA", grupo:
         col_aliquota = "aliquota_baixa"
         col_infracao = "infracao_baixa"
 
-    # Filtro para excluir registros NULL ou EXCLUIR (infracao, aliquota e legislacao)
+    # Filtro simplificado para melhor performance (como no código original)
+    # Se infracao é válida, aliquota e legislacao também serão
     filtro_nivel = f"""
         {col_infracao} IS NOT NULL
         AND CAST({col_infracao} AS STRING) != 'EXCLUIR'
-        AND CAST({col_aliquota} AS STRING) != 'EXCLUIR'
-        AND CAST({col_legislacao} AS STRING) != 'EXCLUIR'
     """
 
     queries = []
 
-    # Query NFCe (comum a GESSUPER e GESMAC)
+    # Verifica se é GESMAC (queries completas) ou GESSUPER (queries otimizadas)
+    usar_queries_completas = is_gesmac_grupo(grupo)
+
+    # Query NFCe
     if tabelas.get('nfce') and (tipo_doc_filter is None or tipo_doc_filter == 'NFCe'):
-        if is_gesmac_grupo(grupo):
+        if usar_queries_completas:
+            # GESMAC: Query completa com todas as colunas
             query_nfce = f"""
                 SELECT
-                    data_emissao,
-                    periodo,
-                    tipo_doc,
-                    chave,
-                    NULL AS link_acesso,
-                    NULL AS modelo_ecf,
-                    entrada_ou_saida,
-                    ie_emitente,
-                    cnpj_emitente,
-                    razao_emitente,
-                    ie_destinatario,
-                    cnpj_destinatario,
-                    NULL AS cpf_destinatario,
-                    razao_destinatario,
-                    estado_destinatario,
-                    NULL AS uf_entrega,
-                    numero_nota,
-                    numero_item,
-                    origem_prod,
-                    NULL AS ind_final,
-                    NULL AS cod_prod,
-                    gtin,
-                    ncm,
-                    descricao,
-                    CAST(cfop AS STRING) AS cfop,
-                    cst,
-                    valor_total,
-                    valor_do_frete,
-                    valor_do_seguro,
-                    valor_outras_despesas,
-                    valor_do_desconto,
-                    NULL AS cod_tot_par,
-                    icms_emitente,
-                    NULL AS icms_destacado,
-                    NULL AS regime_destinatario,
-                    cnae_destinatario,
-                    NULL AS ttd_importacao,
-                    bc_fisco,
-                    {col_legislacao} AS legislacao_ia,
-                    {col_aliquota} AS aliquota_ia,
-                    NULL AS aliq_efetiva,
-                    NULL AS icms_devido,
+                    data_emissao, periodo, tipo_doc, chave, NULL AS link_acesso,
+                    NULL AS modelo_ecf, entrada_ou_saida, ie_emitente, cnpj_emitente,
+                    razao_emitente, ie_destinatario, cnpj_destinatario, NULL AS cpf_destinatario,
+                    razao_destinatario, estado_destinatario, NULL AS uf_entrega, numero_nota,
+                    numero_item, origem_prod, NULL AS ind_final, NULL AS cod_prod, gtin, ncm,
+                    descricao, CAST(cfop AS STRING) AS cfop, cst, valor_total, valor_do_frete,
+                    valor_do_seguro, valor_outras_despesas, valor_do_desconto, NULL AS cod_tot_par,
+                    icms_emitente, NULL AS icms_destacado, NULL AS regime_destinatario, cnae_destinatario,
+                    NULL AS ttd_importacao, bc_fisco, {col_legislacao} AS legislacao_ia,
+                    {col_aliquota} AS aliquota_ia, NULL AS aliq_efetiva, NULL AS icms_devido,
                     {col_infracao} AS infracao_ia
                 FROM {tabelas['nfce']}
                 WHERE regexp_replace(cnpj_emitente, '[^0-9]', '') = '{identificador_digits}'
                 AND {filtro_nivel}
             """
-        else:  # GESSUPER
+        else:
+            # GESSUPER: Query otimizada (~23 colunas)
             query_nfce = f"""
                 SELECT
-                    data_emissao,
-                    periodo,
-                    tipo_doc,
-                    chave,
-                    NULL AS link_acesso,
-                    NULL AS modelo_ecf,
-                    entrada_ou_saida,
-                    NULL AS ie_emitente,
-                    cnpj_emitente,
-                    razao_emitente,
-                    NULL AS ie_destinatario,
-                    NULL AS cnpj_destinatario,
-                    NULL AS cpf_destinatario,
-                    NULL AS razao_destinatario,
-                    NULL AS estado_destinatario,
-                    NULL AS uf_entrega,
-                    numero_nota,
-                    CAST(numero_item AS STRING) AS numero_item,
-                    NULL AS origem_prod,
-                    NULL AS ind_final,
-                    NULL AS cod_prod,
-                    gtin,
-                    ncm,
-                    descricao,
-                    CAST(cfop AS STRING) AS cfop,
-                    NULL AS cst,
-                    NULL AS valor_total,
-                    NULL AS valor_do_frete,
-                    NULL AS valor_do_seguro,
-                    NULL AS valor_outras_despesas,
-                    NULL AS valor_do_desconto,
-                    NULL AS cod_tot_par,
-                    icms_emitente,
-                    NULL AS icms_destacado,
-                    NULL AS regime_destinatario,
-                    NULL AS cnae_destinatario,
-                    NULL AS ttd_importacao,
-                    bc_fisco,
-                    {col_legislacao} AS legislacao_ia,
-                    {col_aliquota} AS aliquota_ia,
-                    NULL AS aliq_efetiva,
-                    NULL AS icms_devido,
+                    data_emissao, periodo, tipo_doc, chave, NULL AS link_acesso,
+                    NULL AS modelo_ecf, entrada_ou_saida, cnpj_emitente, razao_emitente,
+                    numero_nota, gtin, ncm, CAST(numero_item AS STRING) AS numero_item,
+                    descricao, CAST(cfop AS STRING) AS cfop, icms_emitente, NULL AS cod_prod,
+                    NULL AS cod_tot_par, {col_legislacao} AS legislacao_ia, bc_fisco,
+                    {col_aliquota} AS aliquota_ia, NULL AS aliq_efetiva,
                     {col_infracao} AS infracao_ia
                 FROM {tabelas['nfce']}
                 WHERE regexp_replace(cnpj_emitente, '[^0-9]', '') = '{identificador_digits}'
@@ -829,103 +768,38 @@ def get_base_df(_engine, identificador_digits: str, nivel: str = "BAIXA", grupo:
             """
         queries.append(query_nfce)
 
-    # Query Cupons (comum a GESSUPER e GESMAC)
+    # Query Cupons
     if tabelas.get('cupons') and (tipo_doc_filter is None or tipo_doc_filter == 'Cupom'):
-        if is_gesmac_grupo(grupo):
+        if usar_queries_completas:
+            # GESMAC: Query completa
             query_cupons = f"""
                 SELECT
-                    data_emissao,
-                    periodo,
-                    tipo_doc,
-                    NULL AS chave,
-                    NULL AS link_acesso,
-                    modelo_ecf,
-                    NULL AS entrada_ou_saida,
-                    ie_emitente,
-                    cnpj_emitente,
-                    razao_emitente,
-                    NULL AS ie_destinatario,
-                    NULL AS cnpj_destinatario,
-                    NULL AS cpf_destinatario,
-                    NULL AS razao_destinatario,
-                    NULL AS estado_destinatario,
-                    NULL AS uf_entrega,
-                    NULL AS numero_nota,
-                    NULL AS numero_item,
-                    NULL AS origem_prod,
-                    NULL AS ind_final,
-                    cod_prod,
-                    gtin,
-                    ncm,
-                    descricao,
-                    CAST(cfop AS STRING) AS cfop,
-                    NULL AS cst,
-                    bc_fisco AS valor_total,
-                    NULL AS valor_do_frete,
-                    NULL AS valor_do_seguro,
-                    NULL AS valor_outras_despesas,
-                    NULL AS valor_do_desconto,
-                    cod_tot_par,
-                    icms_emitente,
-                    NULL AS icms_destacado,
-                    NULL AS regime_destinatario,
-                    NULL AS cnae_destinatario,
-                    NULL AS ttd_importacao,
-                    bc_fisco,
-                    {col_legislacao} AS legislacao_ia,
-                    {col_aliquota} AS aliquota_ia,
-                    NULL AS aliq_efetiva,
-                    NULL AS icms_devido,
+                    data_emissao, periodo, tipo_doc, NULL AS chave, NULL AS link_acesso,
+                    modelo_ecf, NULL AS entrada_ou_saida, ie_emitente, cnpj_emitente,
+                    razao_emitente, NULL AS ie_destinatario, NULL AS cnpj_destinatario,
+                    NULL AS cpf_destinatario, NULL AS razao_destinatario, NULL AS estado_destinatario,
+                    NULL AS uf_entrega, NULL AS numero_nota, NULL AS numero_item, NULL AS origem_prod,
+                    NULL AS ind_final, cod_prod, gtin, ncm, descricao, CAST(cfop AS STRING) AS cfop,
+                    NULL AS cst, bc_fisco AS valor_total, NULL AS valor_do_frete, NULL AS valor_do_seguro,
+                    NULL AS valor_outras_despesas, NULL AS valor_do_desconto, cod_tot_par, icms_emitente,
+                    NULL AS icms_destacado, NULL AS regime_destinatario, NULL AS cnae_destinatario,
+                    NULL AS ttd_importacao, bc_fisco, {col_legislacao} AS legislacao_ia,
+                    {col_aliquota} AS aliquota_ia, NULL AS aliq_efetiva, NULL AS icms_devido,
                     {col_infracao} AS infracao_ia
                 FROM {tabelas['cupons']}
                 WHERE regexp_replace(cnpj_emitente, '[^0-9]', '') = '{identificador_digits}'
                 AND {filtro_nivel}
             """
-        else:  # GESSUPER
+        else:
+            # GESSUPER: Query otimizada
             query_cupons = f"""
                 SELECT
-                    data_emissao,
-                    periodo,
-                    tipo_doc,
-                    NULL AS chave,
-                    NULL AS link_acesso,
-                    modelo_ecf,
-                    NULL AS entrada_ou_saida,
-                    NULL AS ie_emitente,
-                    cnpj_emitente,
-                    razao_emitente,
-                    NULL AS ie_destinatario,
-                    NULL AS cnpj_destinatario,
-                    NULL AS cpf_destinatario,
-                    NULL AS razao_destinatario,
-                    NULL AS estado_destinatario,
-                    NULL AS uf_entrega,
-                    NULL AS numero_nota,
-                    CAST(NULL AS STRING) AS numero_item,
-                    NULL AS origem_prod,
-                    NULL AS ind_final,
-                    cod_prod,
-                    gtin,
-                    ncm,
-                    descricao,
-                    CAST(cfop AS STRING) AS cfop,
-                    NULL AS cst,
-                    NULL AS valor_total,
-                    NULL AS valor_do_frete,
-                    NULL AS valor_do_seguro,
-                    NULL AS valor_outras_despesas,
-                    NULL AS valor_do_desconto,
-                    cod_tot_par,
-                    icms_emitente,
-                    NULL AS icms_destacado,
-                    NULL AS regime_destinatario,
-                    NULL AS cnae_destinatario,
-                    NULL AS ttd_importacao,
-                    bc_fisco,
-                    {col_legislacao} AS legislacao_ia,
-                    {col_aliquota} AS aliquota_ia,
-                    NULL AS aliq_efetiva,
-                    NULL AS icms_devido,
+                    data_emissao, periodo, tipo_doc, NULL AS chave, NULL AS link_acesso,
+                    modelo_ecf, NULL AS entrada_ou_saida, cnpj_emitente, razao_emitente,
+                    NULL AS numero_nota, gtin, ncm, CAST(NULL AS STRING) AS numero_item,
+                    descricao, CAST(cfop AS STRING) AS cfop, icms_emitente, cod_prod,
+                    cod_tot_par, {col_legislacao} AS legislacao_ia, bc_fisco,
+                    {col_aliquota} AS aliquota_ia, NULL AS aliq_efetiva,
                     {col_infracao} AS infracao_ia
                 FROM {tabelas['cupons']}
                 WHERE regexp_replace(cnpj_emitente, '[^0-9]', '') = '{identificador_digits}'
@@ -933,104 +807,42 @@ def get_base_df(_engine, identificador_digits: str, nivel: str = "BAIXA", grupo:
             """
         queries.append(query_cupons)
 
-    # Query NFe (GESMAC e GESSUPER quando configurado)
+    # Query NFe (GESMAC e GESSUPER NFe quando configurado)
     if tabelas.get('nfe') and (tipo_doc_filter is None or tipo_doc_filter == 'NFe'):
-        if is_gesmac_grupo(grupo):
+        if usar_queries_completas:
+            # GESMAC: Query completa
             query_nfe = f"""
                 SELECT
-                    data_emissao,
-                    periodo,
-                    tipo_doc,
-                    chave,
-                    NULL AS link_acesso,
-                    NULL AS modelo_ecf,
-                    entrada_ou_saida,
-                    ie_emitente,
-                    cnpj_emitente,
-                    razao_emitente,
-                    ie_destinatario,
-                    cnpj_destinatario,
-                    NULL AS cpf_destinatario,
-                    razao_destinatario,
-                    estado_destinatario,
-                    uf_entrega,
-                    numero_nota,
-                    numero_item,
-                    origem_prod,
-                    ind_final,
-                    NULL AS cod_prod,
-                    gtin,
-                    ncm,
-                    descricao,
-                    CAST(cfop AS STRING) AS cfop,
-                    cst,
-                    valor_total,
-                    valor_do_frete,
-                    valor_do_seguro,
-                    valor_outras_despesas,
-                    valor_do_desconto,
-                    NULL AS cod_tot_par,
-                    icms_emitente,
-                    NULL AS icms_destacado,
-                    regime_destinatario,
-                    cnae_destinatario,
-                    ttd_importacao,
-                    bc_fisco_red AS bc_fisco,
-                    {col_legislacao} AS legislacao_ia,
-                    {col_aliquota} AS aliquota_ia,
-                    NULL AS aliq_efetiva,
-                    NULL AS icms_devido,
+                    data_emissao, periodo, tipo_doc, chave, NULL AS link_acesso,
+                    NULL AS modelo_ecf, entrada_ou_saida, ie_emitente, cnpj_emitente,
+                    razao_emitente, ie_destinatario, cnpj_destinatario, NULL AS cpf_destinatario,
+                    razao_destinatario, estado_destinatario, uf_entrega, numero_nota, numero_item,
+                    origem_prod, ind_final, NULL AS cod_prod, gtin, ncm, descricao,
+                    CAST(cfop AS STRING) AS cfop, cst, valor_total, valor_do_frete, valor_do_seguro,
+                    valor_outras_despesas, valor_do_desconto, NULL AS cod_tot_par, icms_emitente,
+                    NULL AS icms_destacado, regime_destinatario, cnae_destinatario, ttd_importacao,
+                    bc_fisco_red AS bc_fisco, {col_legislacao} AS legislacao_ia,
+                    {col_aliquota} AS aliquota_ia, NULL AS aliq_efetiva, NULL AS icms_devido,
                     {col_infracao} AS infracao_ia
                 FROM {tabelas['nfe']}
                 WHERE regexp_replace(cnpj_emitente, '[^0-9]', '') = '{identificador_digits}'
                 AND {filtro_nivel}
             """
-        else:  # GESSUPER - estrutura compatível com queries NFCe/Cupons do GESSUPER
+        else:
+            # GESSUPER NFe: Query com colunas estendidas para NFe (destinatário, valores, etc.)
             query_nfe = f"""
                 SELECT
-                    data_emissao,
-                    periodo,
-                    tipo_doc,
-                    chave,
-                    NULL AS link_acesso,
-                    NULL AS modelo_ecf,
-                    entrada_ou_saida,
-                    ie_emitente,
-                    cnpj_emitente,
-                    razao_emitente,
-                    ie_destinatario,
-                    cnpj_destinatario,
-                    NULL AS cpf_destinatario,
-                    razao_destinatario,
-                    estado_destinatario,
-                    uf_entrega,
-                    numero_nota,
-                    CAST(numero_item AS STRING) AS numero_item,
-                    origem_prod,
-                    ind_final,
-                    cod_prod,
-                    gtin,
-                    ncm,
-                    descricao,
-                    CAST(cfop AS STRING) AS cfop,
-                    cst,
-                    valor_total,
-                    valor_do_frete,
-                    valor_do_seguro,
-                    valor_outras_despesas,
-                    valor_do_desconto,
-                    NULL AS cod_tot_par,
-                    icms_emitente,
-                    NULL AS icms_destacado,
-                    regime_destinatario,
-                    cnae_destinatario,
-                    ttd_importacao,
-                    bc_fisco_red AS bc_fisco,
-                    {col_legislacao} AS legislacao_ia,
-                    {col_aliquota} AS aliquota_ia,
-                    NULL AS aliq_efetiva,
-                    NULL AS icms_devido,
-                    {col_infracao} AS infracao_ia
+                    data_emissao, periodo, tipo_doc, chave, NULL AS link_acesso,
+                    NULL AS modelo_ecf, entrada_ou_saida, ie_emitente, cnpj_emitente,
+                    razao_emitente, ie_destinatario, cnpj_destinatario, NULL AS cpf_destinatario,
+                    razao_destinatario, estado_destinatario, uf_entrega, numero_nota,
+                    CAST(numero_item AS STRING) AS numero_item, origem_prod, ind_final, cod_prod,
+                    gtin, ncm, descricao, CAST(cfop AS STRING) AS cfop, cst, valor_total,
+                    valor_do_frete, valor_do_seguro, valor_outras_despesas, valor_do_desconto,
+                    NULL AS cod_tot_par, icms_emitente, NULL AS icms_destacado, regime_destinatario,
+                    cnae_destinatario, ttd_importacao, bc_fisco_red AS bc_fisco,
+                    {col_legislacao} AS legislacao_ia, {col_aliquota} AS aliquota_ia,
+                    NULL AS aliq_efetiva, NULL AS icms_devido, {col_infracao} AS infracao_ia
                 FROM {tabelas['nfe']}
                 WHERE regexp_replace(cnpj_emitente, '[^0-9]', '') = '{identificador_digits}'
                 AND {filtro_nivel}
