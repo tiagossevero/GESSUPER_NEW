@@ -80,7 +80,7 @@ GRUPOS_CONFIG = {
         "tabelas": {
             "nfce": "niat.infracoes_gessuper_nfce_3M",
             "cupons": "niat.infracoes_gessuper_cupons_3M",
-            "nfe": "niat.infracoes_gessuper_nfe_3m"  # GESSUPER agora tem NFe
+            "nfe": "niat.infracoes_gessuper_nfe_3M"  # GESSUPER agora tem NFe
         },
         # Modelos de exportação (2 opções para GESSUPER)
         "modelos_exportacao": ["Notas de Consumo", "NFe"],
