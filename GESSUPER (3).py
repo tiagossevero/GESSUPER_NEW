@@ -1570,6 +1570,52 @@ def get_folder_link(path: str) -> str:
     """
     return path
 
+
+def _smb_write_with_retry(filepath: str, data: bytes, max_retries: int = 2) -> None:
+    """
+    Salva arquivo via SMB com retry automático.
+    Se detectar erro de DFS/conexão, reseta o cache e tenta novamente.
+
+    Args:
+        filepath: Caminho completo do arquivo na rede
+        data: Dados binários para salvar
+        max_retries: Número máximo de tentativas (padrão: 2)
+
+    Raises:
+        Exception: Se todas as tentativas falharem
+    """
+    last_error = None
+
+    for attempt in range(max_retries):
+        try:
+            with smbclient.open_file(filepath, mode="wb") as f:
+                f.write(data)
+            return  # Sucesso!
+        except Exception as e:
+            last_error = e
+            error_msg = str(e)
+
+            # Se for erro de DFS/conexão e ainda temos tentativas, reseta e tenta novamente
+            is_dfs_error = "0xc000035c" in error_msg or "STATUS_UNKNOWN" in error_msg
+            is_connection_error = "connection" in error_msg.lower() or "reset" in error_msg.lower()
+
+            if (is_dfs_error or is_connection_error) and attempt < max_retries - 1:
+                try:
+                    # Reseta cache de conexões SMB
+                    smbclient.reset_connection_cache()
+                    import time
+                    time.sleep(1)  # Pequena pausa antes de tentar novamente
+                except:
+                    pass
+                continue
+            else:
+                # Erro não recuperável ou última tentativa
+                raise
+
+    # Se chegou aqui, todas as tentativas falharam
+    if last_error:
+        raise last_error
+
 def save_to_network_fast(df: pd.DataFrame, contrib_info: dict, nivel: str, progress_callback=None) -> tuple:
     """
     Salva os arquivos Excel diretamente na rede usando smbclient.
@@ -1604,11 +1650,10 @@ def save_to_network_fast(df: pd.DataFrame, contrib_info: dict, nivel: str, progr
             
             if progress_callback:
                 progress_callback(0.85, 1, "Salvando na rede...")
-            
-            # Salva na rede usando smbclient
-            with smbclient.open_file(filepath, mode="wb") as f:
-                f.write(excel_data)
-            
+
+            # Salva na rede com retry automático (reseta cache SMB se erro DFS)
+            _smb_write_with_retry(filepath, excel_data)
+
             file_paths.append(filepath)
             
             if progress_callback:
@@ -1648,11 +1693,10 @@ def save_to_network_fast(df: pd.DataFrame, contrib_info: dict, nivel: str, progr
             base_filename = get_export_filename(contrib_info, nivel, "xlsx")
             parte_filename = base_filename.replace(".xlsx", f" - Parte {parte} de {total_partes}.xlsx")
             filepath = f"{REDE_PATH}\\{parte_filename}"
-            
-            # Salva na rede usando smbclient
-            with smbclient.open_file(filepath, mode="wb") as f:
-                f.write(excel_data)
-            
+
+            # Salva na rede com retry automático (reseta cache SMB se erro DFS)
+            _smb_write_with_retry(filepath, excel_data)
+
             file_paths.append(filepath)
             
             # Libera memória
@@ -1698,11 +1742,10 @@ def save_csv_to_network(df: pd.DataFrame, contrib_info: dict, nivel: str) -> tup
         # Gera CSV em memória no formato brasileiro
         csv_str = df.to_csv(index=False, sep=";", decimal=",")
         csv_bytes = csv_str.encode("latin-1", errors="replace")
-        
-        # Salva na rede usando smbclient
-        with smbclient.open_file(filepath, mode="wb") as f:
-            f.write(csv_bytes)
-        
+
+        # Salva na rede com retry automático (reseta cache SMB se erro DFS)
+        _smb_write_with_retry(filepath, csv_bytes)
+
         return True, "CSV salvo com sucesso!", filepath, REDE_PATH
 
     except Exception as e:
