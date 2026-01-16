@@ -594,11 +594,12 @@ def is_op_ttd_grupo(grupo: str = None) -> bool:
 def uses_full_queries(grupo: str = None) -> bool:
     """
     Verifica se o grupo usa queries completas (todas as colunas padronizadas).
-    Retorna True para GESMAC, GESAUTO, OP_TTD_409_410_411 e GESSUPER_NFE.
+    Retorna True para todos os grupos (estrutura padronizada para todas as operações).
     """
     if grupo is None:
         grupo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
-    return grupo in ["GESMAC", "GESAUTO", "OP_TTD_409_410_411", "GESSUPER_NFE"]
+    # Todos os grupos agora usam a estrutura padronizada completa
+    return True
 
 
 def check_tables_available(engine, grupo: str = None) -> bool:
@@ -5748,7 +5749,7 @@ def render_operacao_fiscal(engine, grupo: str):
                                 progress_bar.progress(pct, text=f"{msg} ({pct}%)")
                             
                             success, message, file_paths, _ = save_to_network_fast(
-                                df_export, contrib_info, nivel_atual, progress_callback, grupo=grupo_selecionado
+                                df_export, contrib_info, nivel_atual, progress_callback, grupo=grupo
                             )
                             
                             progress_bar.progress(100, text="✅ Concluído (100%)")
@@ -5783,7 +5784,7 @@ def render_operacao_fiscal(engine, grupo: str):
                             excel_bytes = export_to_excel_template(
                                 df_export, contrib_info, nivel_atual,
                                 progress_callback=progress_callback_download,
-                                grupo=grupo_selecionado
+                                grupo=grupo
                             )
                             
                             st.session_state[cache_key] = excel_bytes
