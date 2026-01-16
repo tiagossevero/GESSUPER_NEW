@@ -43,6 +43,49 @@ try:
 except ImportError:
     SMB_AVAILABLE = False
 
+# Flag para controlar se a sessão SMB foi registrada
+_SMB_SESSION_REGISTERED = False
+
+def _register_smb_session():
+    """
+    Registra sessão SMB com credenciais do secrets.toml.
+    Deve ser chamada antes de usar smbclient.
+
+    Espera no secrets.toml:
+    [smb_credentials]
+    username = "DOMINIO\\usuario" ou "usuario"
+    password = "senha"
+    domain = "DOMINIO"  # opcional se já incluído no username
+    """
+    global _SMB_SESSION_REGISTERED
+
+    if _SMB_SESSION_REGISTERED or not SMB_AVAILABLE:
+        return
+
+    try:
+        # Tenta ler credenciais do secrets.toml
+        if "smb_credentials" in st.secrets:
+            smb_creds = st.secrets["smb_credentials"]
+            username = smb_creds.get("username", "")
+            password = smb_creds.get("password", "")
+            domain = smb_creds.get("domain", "")
+
+            # Se domain separado, adiciona ao username
+            if domain and "\\" not in username and "@" not in username:
+                username = f"{domain}\\{username}"
+
+            if username and password:
+                # Registra sessão para o servidor DFS
+                smbclient.register_session(
+                    "sef.sc.gov.br",
+                    username=username,
+                    password=password
+                )
+                _SMB_SESSION_REGISTERED = True
+    except Exception as e:
+        # Silenciosamente falha - tentará sem autenticação explícita
+        pass
+
 # Limite de linhas por arquivo Excel (Excel suporta 1.048.576, usamos 1.000.000 para segurança)
 MAX_ROWS_PER_EXCEL = 1000000
 
@@ -1587,8 +1630,9 @@ def _save_file_to_network(filepath: str, data: bytes) -> None:
         except Exception:
             pass  # Fallback para smbclient
 
-    # Linux ou fallback: usa smbclient
+    # Linux ou fallback: usa smbclient com autenticação
     if SMB_AVAILABLE:
+        _register_smb_session()  # Registra credenciais do secrets.toml
         with smbclient.open_file(filepath, mode="wb") as f:
             f.write(data)
     else:
@@ -1782,6 +1826,31 @@ def diagnostico_rede() -> dict:
         'mensagem': 'smbprotocol disponível',
         'detalhes': None
     })
+
+    # Teste: Registrar sessão SMB com credenciais do secrets.toml
+    try:
+        _register_smb_session()
+        if _SMB_SESSION_REGISTERED:
+            resultados['testes'].append({
+                'nome': 'Autenticação SMB',
+                'status': 'OK',
+                'mensagem': 'Credenciais carregadas do secrets.toml',
+                'detalhes': None
+            })
+        else:
+            resultados['testes'].append({
+                'nome': 'Autenticação SMB',
+                'status': 'AVISO',
+                'mensagem': 'Sem credenciais configuradas - adicione [smb_credentials] no secrets.toml',
+                'detalhes': 'username, password, domain'
+            })
+    except Exception as e:
+        resultados['testes'].append({
+            'nome': 'Autenticação SMB',
+            'status': 'AVISO',
+            'mensagem': f'Erro ao registrar credenciais: {str(e)[:100]}',
+            'detalhes': None
+        })
 
     # Teste 0: Verificar acesso via sistema (net use / mount)
     try:
