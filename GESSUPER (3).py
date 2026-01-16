@@ -247,20 +247,148 @@ GRUPOS_CONFIG = {
             ("ICMS devido", "Valor do ICMS considerado como correto pelo fisco."),
             ("ICMS não-recolhido", "Valor do ICMS a ser recolhido como diferença pelo contribuinte. Trata-se da dedução do valor de 'ICMS devido' pelo valor do campo 'ICMS destacado'")
         ]
+    },
+    # =========================================================================
+    # GESAUTO - Sistema de infrações para operações automotivas
+    # =========================================================================
+    "GESAUTO": {
+        "nome": "GESAUTO",
+        "nome_display": "GESAUTO",
+        "descricao": "Sistema de Infrações GESAUTO - Operações Automotivas",
+        "icone": "🚗",
+        # Tabelas (com NFe, NFCe e Cupons para GESAUTO)
+        "tabelas": {
+            "nfce": "niat.infracoes_gesauto_nfce_3m",
+            "cupons": "niat.infracoes_gesauto_cupons_3m",
+            "nfe": "niat.infracoes_gesauto_nfe_3m"
+        },
+        # Modelo de exportação único com todas as modalidades
+        "modelos_exportacao": ["Anexo J"],
+        # Colunas específicas para export
+        "export_config": {
+            "Anexo J": {
+                "titulo_aba_dados": "ANEXO J1 - NOTAS DE SAÍDAS",
+                "titulo_aba_icms": "ANEXO J2 - ICMS DEVIDO",
+                "colunas_header": [
+                    "Data de emissão", "Período", "Tipo Documento", "Chave de acesso",
+                    "Link de Acesso", "ECF-FAB", "Entrada ou saída", "IE Emitente",
+                    "CNPJ Emitente", "Razão do Emitente", "IE Destinatário",
+                    "CNPJ Destinatário", "CPF Destinatário", "Razão do Destinatário",
+                    "Estado do Destinatário", "UF Entrega", "Regime do Destinatário", "CNAE do Destinatário",
+                    "Número da Nota", "Número do Item", "Origem do Produto", "Ind Final",
+                    "Tipo de Operação Final", "TTD 409/410/411", "GTIN", "NCM", "CST",
+                    "Descrição do produto", "CFOP", "Código do Produto", "Valor Total",
+                    "Valor do Frete", "Valor do Seguro", "Valor de Outras Despesas",
+                    "Valor do Desconto", "Cod. Tot. Par", "Alíquota Destacada", "ICMS Destacado",
+                    "Valor da Operação", "Alíquota Efetiva Correta (FISCO)", "Legislação Aplicável",
+                    "Alíquota Efetiva destacada pelo Contribuinte", "ICMS devido", "ICMS não-recolhido"
+                ]
+            }
+        },
+        # Índice de descrição dos campos para GESAUTO
+        "indice_campos": [
+            ("Chave de acesso", "Indica do número da chave de acesso das Notas Fiscais. Não é aplicável para as informações da ECF."),
+            ("URL", "Link para acessar o documento fiscal (apenas Notas Fiscais)."),
+            ("Tipo Documento", "Indica a fonte da informação. Podia variar entre NFe (Nota Fiscal Eletrônica), NFCe (Nota Fiscal do Consumidor Eletrônica) ou ECF (Emissor de Cupom Fiscal)"),
+            ("Data de emissão", "Data de emissão do documento. (No caso de Cupom Fiscal, é a data da Redução Z)"),
+            ("Entrada ou saída", "Indica se a operação é de entrada ou saída de mercadorias."),
+            ("ECF-FAB", "Indica o número de série do Emissor de Cupom Fiscal (ECF). Não aplicável para operações com Notas Fiscais"),
+            ("GTIN", "Código GTIN da mercadoria."),
+            ("NCM", "Código NCM da mercadoria."),
+            ("No. Nota", "Número da Nota Fiscal. Não é aplicável para informações da ECF."),
+            ("No. Item", "Número do item dentro da Nota Fiscal. Não aplicável a Cupons."),
+            ("Origem do Produto", "Informação de Origem do Produto retirado da Nota Fiscal. Não aplicável a ECF (Cupons) - Indica se o produto é nacional ou estrangeiro."),
+            ("Ind Final e Tipo de Operação Final", "Informação de Ind Final retirado da Nota Fiscal. Não aplicável a ECF (Cupons). Indica se o destinatário receberá o produto para revenda/industrialização ou consumo final."),
+            ("TTD 409/410/411", "Indica se o TTD 409, 410 ou 411 estava ativo para o contribuinte no respectivo período da Nota Fiscal. (Aplicável somente para NFe)"),
+            ("Código do produto", "Código do produto declarado pelo contribuinte para a operação. Válido apenas para Cupons Fiscais"),
+            ("Cód. Tot. Par", "Código totalizador. Informação presente apenas nas operações ECF."),
+            ("Alíquota Destacada", "Alíquota de ICMS destacada no documento fiscal pelo contribuinte"),
+            ("ICMS Destacado", "ICMS destacado no documento fiscal pelo contribuinte"),
+            ("Valor da operação", "Valor da Base de Cálculo calculada pelo fisco, sem considerar reduções da base de cálculo. As reduções da BC serão aplicadas na alíquota efetiva correta. Para as notas fiscais (NF-e e NFC-e inclui frete, seguro, despesas adicionais, descontado os descontos concedidos). Para os Cupons leva-se em conta apenas o valor declarado na EFD que é o valor efetivo da operação."),
+            ("Alíquota Efetiva Correta (FISCO)", "Alíquota de ICMS considerada pelo fisco para a operação. Aqui considerando eventuais reduções da Base de Cálculo. Para os Cupons fiscais é a alíquota retirada do COD TOT PAR."),
+            ("Alíquota Efetiva destacada pelo Contribuinte", "Alíquota efetiva destacada pelo Contribuinte, que é calculada dividindo o ICMS destacado pelo Valor da Operação sem considerar redução da base de cálculo"),
+            ("ICMS devido", "Valor do ICMS considerado como correto pelo fisco."),
+            ("ICMS não-recolhido", "Valor do ICMS a ser recolhido como diferença pelo contribuinte. Trata-se da dedução do valor de 'ICMS devido' pelo valor do campo 'ICMS destacado'")
+        ]
+    },
+    # =========================================================================
+    # OP TTD 409/410/411 - Operações com TTD específicos
+    # =========================================================================
+    "OP_TTD_409_410_411": {
+        "nome": "OP_TTD_409_410_411",
+        "nome_display": "OP TTD 409/410/411",
+        "descricao": "Operações com TTD 409, 410 e 411 - Tratamento Tributário Diferenciado",
+        "icone": "📋",
+        # Tabelas (com NFe, NFCe e Cupons para OP TTD)
+        "tabelas": {
+            "nfce": "niat.infracoes_op_4_nfce_3m",
+            "cupons": "niat.infracoes_op_4_cupons_3m",
+            "nfe": "niat.infracoes_op_4_nfe_3m"
+        },
+        # Modelo de exportação único com todas as modalidades
+        "modelos_exportacao": ["Anexo J"],
+        # Colunas específicas para export
+        "export_config": {
+            "Anexo J": {
+                "titulo_aba_dados": "ANEXO J1 - NOTAS DE SAÍDAS",
+                "titulo_aba_icms": "ANEXO J2 - ICMS DEVIDO",
+                "colunas_header": [
+                    "Data de emissão", "Período", "Tipo Documento", "Chave de acesso",
+                    "Link de Acesso", "ECF-FAB", "Entrada ou saída", "IE Emitente",
+                    "CNPJ Emitente", "Razão do Emitente", "IE Destinatário",
+                    "CNPJ Destinatário", "CPF Destinatário", "Razão do Destinatário",
+                    "Estado do Destinatário", "UF Entrega", "Regime do Destinatário", "CNAE do Destinatário",
+                    "Número da Nota", "Número do Item", "Origem do Produto", "Ind Final",
+                    "Tipo de Operação Final", "TTD 409/410/411", "GTIN", "NCM", "CST",
+                    "Descrição do produto", "CFOP", "Código do Produto", "Valor Total",
+                    "Valor do Frete", "Valor do Seguro", "Valor de Outras Despesas",
+                    "Valor do Desconto", "Cod. Tot. Par", "Alíquota Destacada", "ICMS Destacado",
+                    "Valor da Operação", "Alíquota Efetiva Correta (FISCO)", "Legislação Aplicável",
+                    "Alíquota Efetiva destacada pelo Contribuinte", "ICMS devido", "ICMS não-recolhido"
+                ]
+            }
+        },
+        # Índice de descrição dos campos para OP TTD
+        "indice_campos": [
+            ("Chave de acesso", "Indica do número da chave de acesso das Notas Fiscais. Não é aplicável para as informações da ECF."),
+            ("URL", "Link para acessar o documento fiscal (apenas Notas Fiscais)."),
+            ("Tipo Documento", "Indica a fonte da informação. Podia variar entre NFe (Nota Fiscal Eletrônica), NFCe (Nota Fiscal do Consumidor Eletrônica) ou ECF (Emissor de Cupom Fiscal)"),
+            ("Data de emissão", "Data de emissão do documento. (No caso de Cupom Fiscal, é a data da Redução Z)"),
+            ("Entrada ou saída", "Indica se a operação é de entrada ou saída de mercadorias."),
+            ("ECF-FAB", "Indica o número de série do Emissor de Cupom Fiscal (ECF). Não aplicável para operações com Notas Fiscais"),
+            ("GTIN", "Código GTIN da mercadoria."),
+            ("NCM", "Código NCM da mercadoria."),
+            ("No. Nota", "Número da Nota Fiscal. Não é aplicável para informações da ECF."),
+            ("No. Item", "Número do item dentro da Nota Fiscal. Não aplicável a Cupons."),
+            ("Origem do Produto", "Informação de Origem do Produto retirado da Nota Fiscal. Não aplicável a ECF (Cupons) - Indica se o produto é nacional ou estrangeiro."),
+            ("Ind Final e Tipo de Operação Final", "Informação de Ind Final retirado da Nota Fiscal. Não aplicável a ECF (Cupons). Indica se o destinatário receberá o produto para revenda/industrialização ou consumo final."),
+            ("TTD 409/410/411", "Indica se o TTD 409, 410 ou 411 estava ativo para o contribuinte no respectivo período da Nota Fiscal. (Aplicável somente para NFe)"),
+            ("Código do produto", "Código do produto declarado pelo contribuinte para a operação. Válido apenas para Cupons Fiscais"),
+            ("Cód. Tot. Par", "Código totalizador. Informação presente apenas nas operações ECF."),
+            ("Alíquota Destacada", "Alíquota de ICMS destacada no documento fiscal pelo contribuinte"),
+            ("ICMS Destacado", "ICMS destacado no documento fiscal pelo contribuinte"),
+            ("Valor da operação", "Valor da Base de Cálculo calculada pelo fisco, sem considerar reduções da base de cálculo. As reduções da BC serão aplicadas na alíquota efetiva correta. Para as notas fiscais (NF-e e NFC-e inclui frete, seguro, despesas adicionais, descontado os descontos concedidos). Para os Cupons leva-se em conta apenas o valor declarado na EFD que é o valor efetivo da operação."),
+            ("Alíquota Efetiva Correta (FISCO)", "Alíquota de ICMS considerada pelo fisco para a operação. Aqui considerando eventuais reduções da Base de Cálculo. Para os Cupons fiscais é a alíquota retirada do COD TOT PAR."),
+            ("Alíquota Efetiva destacada pelo Contribuinte", "Alíquota efetiva destacada pelo Contribuinte, que é calculada dividindo o ICMS destacado pelo Valor da Operação sem considerar redução da base de cálculo"),
+            ("ICMS devido", "Valor do ICMS considerado como correto pelo fisco."),
+            ("ICMS não-recolhido", "Valor do ICMS a ser recolhido como diferença pelo contribuinte. Trata-se da dedução do valor de 'ICMS devido' pelo valor do campo 'ICMS destacado'")
+        ]
     }
 }
 
 # Mapeamento para compatibilidade - mapeia nome base para variantes
 GRUPO_BASE_MAP = {
     "GESSUPER": ["GESSUPER_NFCE", "GESSUPER_NFE"],
-    "GESMAC": ["GESMAC"]
+    "GESMAC": ["GESMAC"],
+    "GESAUTO": ["GESAUTO"],
+    "OP_TTD": ["OP_TTD_409_410_411"]
 }
 
 # Grupo padrão (primeiro grupo na lista)
 GRUPO_PADRAO = "GESSUPER_NFCE"
 
 # Lista ordenada dos grupos para exibição nas abas
-GRUPOS_ORDENADOS = ["GESSUPER_NFCE", "GESSUPER_NFE", "GESMAC"]
+GRUPOS_ORDENADOS = ["GESSUPER_NFCE", "GESSUPER_NFE", "GESMAC", "GESAUTO", "OP_TTD_409_410_411"]
 
 
 # =============================================================================
@@ -443,6 +571,34 @@ def is_gessuper_nfe_grupo(grupo: str = None) -> bool:
     if grupo is None:
         grupo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
     return grupo == "GESSUPER_NFE"
+
+
+def is_gesauto_grupo(grupo: str = None) -> bool:
+    """
+    Verifica se o grupo é GESAUTO.
+    """
+    if grupo is None:
+        grupo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
+    return grupo == "GESAUTO"
+
+
+def is_op_ttd_grupo(grupo: str = None) -> bool:
+    """
+    Verifica se o grupo é OP TTD 409/410/411.
+    """
+    if grupo is None:
+        grupo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
+    return grupo == "OP_TTD_409_410_411"
+
+
+def uses_full_queries(grupo: str = None) -> bool:
+    """
+    Verifica se o grupo usa queries completas (todas as colunas padronizadas).
+    Retorna True para GESMAC, GESAUTO, OP_TTD_409_410_411 e GESSUPER_NFE.
+    """
+    if grupo is None:
+        grupo = st.session_state.get('grupo_selecionado', GRUPO_PADRAO)
+    return grupo in ["GESMAC", "GESAUTO", "OP_TTD_409_410_411", "GESSUPER_NFE"]
 
 
 def check_tables_available(engine, grupo: str = None) -> bool:
@@ -727,8 +883,8 @@ def get_base_df(_engine, identificador_digits: str, nivel: str = "BAIXA", grupo:
 
     queries = []
 
-    # Verifica se é GESMAC (queries completas) ou GESSUPER (queries otimizadas)
-    usar_queries_completas = is_gesmac_grupo(grupo)
+    # Verifica se o grupo usa queries completas (GESMAC, GESAUTO, OP_TTD, GESSUPER_NFE)
+    usar_queries_completas = uses_full_queries(grupo)
 
     # Query NFCe
     if tabelas.get('nfce') and (tipo_doc_filter is None or tipo_doc_filter == 'NFCe'):
@@ -976,22 +1132,22 @@ def build_export_df(df: pd.DataFrame, nivel_str: str, grupo: str = None, modelo_
         return None
 
     # Define colunas de exportação baseado no grupo e modelo
-    # GESMAC sempre usa colunas estendidas
-    # GESSUPER usa colunas estendidas para NFe e colunas padrão para Notas de Consumo
-    usar_colunas_estendidas = is_gesmac_grupo(grupo) or is_gessuper_nfe_grupo(grupo)
+    # Todos os grupos usam colunas estendidas exceto GESSUPER_NFCE
+    usar_colunas_estendidas = uses_full_queries(grupo)
 
     if usar_colunas_estendidas:
-        # Colunas estendidas para NFe (GESMAC ou GESSUPER NFe)
+        # Colunas padronizadas para todas as operações (estrutura completa)
         colunas_export = [
             "data_emissao", "periodo", "tipo_doc", "chave", "link_acesso",
             "modelo_ecf", "entrada_ou_saida", "ie_emitente", "cnpj_emitente",
             "razao_emitente", "ie_destinatario", "cnpj_destinatario",
             "cpf_destinatario", "razao_destinatario", "estado_destinatario",
-            "regime_destinatario", "cnae_destinatario", "numero_nota", "numero_item",
-            "origem_prod", "ind_final", "ttd_importacao", "gtin", "ncm", "descricao",
+            "uf_entrega", "regime_destinatario", "cnae_destinatario",
+            "numero_nota", "numero_item", "origem_prod", "ind_final",
+            "ttd_importacao", "gtin", "ncm", "cst", "descricao",
             "cfop", "cod_prod", "valor_total", "valor_do_frete", "valor_do_seguro",
             "valor_outras_despesas", "valor_do_desconto", "cod_tot_par",
-            "icms_emitente", "icms_destacado", "bc_fisco", "aliquota_ia_icms",
+            "icms_emitente", "bc_fisco", "aliquota_ia_icms",
             "legislacao_ia_icms", "aliq_efetiva", "icms_devido", "icms_nao_recolhido"
         ]
     else:
@@ -1023,11 +1179,12 @@ def export_to_csv(df: pd.DataFrame, identificador: str, nivel: str) -> bytes:
     csv_str = df.to_csv(index=False, sep=";", decimal=",")
     return csv_str.encode("latin-1", errors="replace")
 
-def export_to_excel_template(df: pd.DataFrame, contrib_info: dict, nivel: str, parte_atual: int = None, total_partes: int = None, progress_callback=None) -> bytes:
+def export_to_excel_template(df: pd.DataFrame, contrib_info: dict, nivel: str, parte_atual: int = None, total_partes: int = None, progress_callback=None, grupo: str = None) -> bytes:
     """
     Exporta DataFrame para Excel usando a estrutura do template Anexo J.
     Inclui fórmulas para recálculos automáticos na aba J2.
-    
+    Ordem das abas: J2 (ICMS DEVIDO), Índice, J1 (NOTAS DE SAÍDAS)
+
     Args:
         df: DataFrame com os dados
         contrib_info: Informações do contribuinte
@@ -1035,300 +1192,112 @@ def export_to_excel_template(df: pd.DataFrame, contrib_info: dict, nivel: str, p
         parte_atual: Número da parte atual (se dividido)
         total_partes: Total de partes (se dividido)
         progress_callback: Função callback(percentual, mensagem) para reportar progresso
+        grupo: Grupo de operação para determinar estrutura de colunas
     """
     def report_progress(pct, msg):
         if progress_callback:
             progress_callback(pct, msg)
-    
+
     report_progress(5, "Criando estrutura do arquivo")
-    
+
+    # Determina se usa estrutura estendida
+    usar_estrutura_estendida = uses_full_queries(grupo) if grupo else False
+
     buffer = BytesIO()
-    
+
     # Cria workbook
     wb = Workbook()
-    
-    # =========================================================================
-    # ABA 1: ANEXO J1 - NOTAS DE SAÍDAS (dados detalhados)
-    # =========================================================================
-    ws1 = wb.active
-    ws1.title = "ANEXO J1 - NOTAS DE SAÍDAS"
-    
-    # Estilos
+
+    # Estilos comuns
     header_font = Font(bold=True, color="FFFFFF", size=10)
     header_fill = PatternFill(start_color="1565C0", end_color="1565C0", fill_type="solid")
     header_fill_fisco = PatternFill(start_color="C62828", end_color="C62828", fill_type="solid")
+    header_fill_yellow = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
     title_font = Font(bold=True, size=14, color="1565C0")
     subtitle_font = Font(bold=True, size=11, color="666666")
-    
+
     thin_border = Border(
         left=Side(style='thin'),
         right=Side(style='thin'),
         top=Side(style='thin'),
         bottom=Side(style='thin')
     )
-    
-    # Linha 1: Título (inclui parte se aplicável)
-    titulo_j1 = "ANEXO J1"
-    if parte_atual is not None and total_partes is not None:
-        titulo_j1 = f"ANEXO J1 - Parte {parte_atual} de {total_partes}"
-    ws1['A1'] = titulo_j1
-    ws1['A1'].font = title_font
-    
-    # Linha 2: Subtítulos das seções
-    ws1['D2'] = "INFORMAÇÕES RETIRADAS DOS DOCUMENTOS FISCAIS (Cupons Fiscais ou NFC-e)"
-    ws1['D2'].font = subtitle_font
-    ws1['S2'] = "INFORMAÇÕES DECLARADAS PELO FISCO"
-    ws1['S2'].font = Font(bold=True, size=11, color="C62828")
-    
-    # Linha 3: Cabeçalhos
-    headers_j1 = [
-        "Data de emissão",      # A
-        "Período",              # B
-        "Tipo Documento",       # C
-        "Chave de acesso",      # D
-        "Link de Acesso",       # E
-        "ECF-FAB",              # F
-        "Entrada ou saída",     # G
-        "CNPJ Emitente",        # H
-        "Razão do Emitente",    # I
-        "Número",               # J
-        "GTIN",                 # K
-        "NCM",                  # L
-        "Item",                 # M
-        "Descrição do produto", # N
-        "CFOP",                 # O
-        "ICMS destacado",       # P
-        "Código do Produto",    # Q
-        "Cód. Tot. Par",        # R
-        "Legislação",           # S (FISCO)
-        "Valor da Operação",    # T (FISCO)
-        "Alíquota ICMS correta",# U (FISCO)
-        "Alíquota ICMS efetiva",# V (FISCO)
-        "ICMS devido",          # W (FISCO)
-        "ICMS não-recolhido"    # X (FISCO)
-    ]
-    
-    for col_idx, header in enumerate(headers_j1, 1):
-        cell = ws1.cell(row=3, column=col_idx)
-        cell.value = header
-        cell.font = header_font
-        cell.fill = header_fill_fisco if col_idx >= 19 else header_fill
-        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        cell.border = thin_border
-    
-    # Altura da linha de cabeçalho
-    ws1.row_dimensions[3].height = 30
-    
-    # Mapeamento de colunas do DataFrame para o template
-    # Nota: link_acesso (E) será fórmula para NF-e/NFC-e
-    column_mapping = {
-        'data_emissao': 'A',
-        'periodo': 'B',
-        'tipo_doc': 'C',
-        'chave': 'D',
-        # 'link_acesso': 'E' - será fórmula HYPERLINK
-        'modelo_ecf': 'F',
-        'entrada_ou_saida': 'G',
-        'cnpj_emitente': 'H',
-        'razao_emitente': 'I',
-        'numero_nota': 'J',
-        'gtin': 'K',
-        'ncm': 'L',
-        'numero_item': 'M',
-        'descricao': 'N',
-        'cfop': 'O',
-        'icms_emitente': 'P',
-        'cod_prod': 'Q',
-        'cod_tot_par': 'R',
-        'legislacao_ia_icms': 'S',
-        'bc_fisco': 'T',
-        'aliquota_ia_icms': 'U'
-        # Colunas V, W, X serão fórmulas
-    }
-    
-    report_progress(10, "Preenchendo dados da aba J1")
 
-    # Ordena dados por data_emissao (mais antigo primeiro) para ordem cronológica
-    if 'data_emissao' in df.columns:
-        df = df.sort_values('data_emissao', ascending=True, na_position='last').reset_index(drop=True)
-
-    # Preenche os dados a partir da linha 4
-    total_rows = len(df)
-    progress_interval = max(1, total_rows // 20)  # Atualiza a cada 5%
-    
-    for row_idx, row_data in enumerate(df.itertuples(index=False), 4):
-        # Reporta progresso a cada 5%
-        atual_row = row_idx - 4
-        if atual_row % progress_interval == 0:
-            pct = 10 + int((atual_row / total_rows) * 50)  # 10% a 60%
-            report_progress(pct, f"Processando linha {atual_row:,} de {total_rows:,}")
-        
-        row_dict = row_data._asdict()
-        
-        for col_name, col_letter in column_mapping.items():
-            if col_name in row_dict:
-                col_idx = ord(col_letter) - ord('A') + 1
-                cell = ws1.cell(row=row_idx, column=col_idx)
-                value = row_dict[col_name]
-                
-                # Converte datas - dayfirst=True para interpretar DD/MM/YYYY corretamente
-                if col_name == 'data_emissao' and pd.notna(value):
-                    try:
-                        if isinstance(value, str):
-                            cell.value = pd.to_datetime(value, dayfirst=True).date()
-                        else:
-                            cell.value = value
-                        cell.number_format = 'DD/MM/YYYY'
-                    except:
-                        cell.value = value
-                # Formata período como DD/MM/AAAA - dayfirst=True para interpretar corretamente
-                elif col_name == 'periodo' and pd.notna(value):
-                    try:
-                        if isinstance(value, str):
-                            cell.value = pd.to_datetime(value, dayfirst=True).date()
-                        else:
-                            cell.value = value
-                        cell.number_format = 'DD/MM/YYYY'
-                    except:
-                        cell.value = value
-                # Valores numéricos monetários
-                elif col_name in ['icms_emitente', 'bc_fisco'] and pd.notna(value):
-                    try:
-                        cell.value = float(value)
-                        cell.number_format = '#,##0.00'
-                    except:
-                        cell.value = value
-                # Alíquota ICMS correta - dividir por 100 para formato percentual correto
-                elif col_name == 'aliquota_ia_icms' and pd.notna(value):
-                    try:
-                        # Valor vem como 12 (12%), divide por 100 = 0.12, Excel mostra 12%
-                        cell.value = float(value) / 100
-                        cell.number_format = '0.00%'
-                    except:
-                        cell.value = value
-                else:
-                    cell.value = value if pd.notna(value) else ''
-                
-                cell.border = thin_border
-        
-        # Fórmula para Link de Acesso (coluna E) - HYPERLINK apenas se houver chave (NF-e/NFC-e)
-        # Cupom Fiscal não tem chave, então ficará em branco
-        cell_e = ws1.cell(row=row_idx, column=5)  # Coluna E
-        cell_e.value = f'=IF(D{row_idx}<>"",HYPERLINK("https://sat.sef.sc.gov.br/tax.NET/Sat.NFe.Web/Consultas/Nfe_ResumoPDF.ashx?id="&D{row_idx},"Abrir DANFE"),"")'
-        cell_e.border = thin_border
-        
-        # Fórmula para Alíquota ICMS efetiva (coluna V) = ICMS destacado / BC Fisco
-        cell_v = ws1.cell(row=row_idx, column=22)  # Coluna V
-        cell_v.value = f"=IF(T{row_idx}=0,0,P{row_idx}/T{row_idx})"
-        cell_v.number_format = '0.00%'
-        cell_v.border = thin_border
-        
-        # Fórmula para ICMS devido (coluna W) = ROUND(BC Fisco * Alíquota ICMS correta, 2)
-        cell_w = ws1.cell(row=row_idx, column=23)  # Coluna W
-        cell_w.value = f"=ROUND(T{row_idx}*U{row_idx},2)"
-        cell_w.number_format = '#,##0.00'
-        cell_w.border = thin_border
-
-        # Fórmula para ICMS não-recolhido (coluna X) = MAX(0, ICMS devido - ICMS destacado)
-        cell_x = ws1.cell(row=row_idx, column=24)  # Coluna X
-        cell_x.value = f"=MAX(0,ROUND(W{row_idx}-P{row_idx},2))"
-        cell_x.number_format = '#,##0.00'
-        cell_x.border = thin_border
-    
-    # Autoajuste de largura das colunas baseado no conteúdo
-    for col_idx in range(1, 25):  # Colunas A até X
-        col_letter = get_column_letter(col_idx)
-        max_length = 0
-        
-        # Verifica todas as linhas da coluna
-        for row in ws1.iter_rows(min_row=1, max_row=ws1.max_row, min_col=col_idx, max_col=col_idx):
-            for cell in row:
-                try:
-                    if cell.value:
-                        # Para fórmulas, estima o tamanho do resultado
-                        if str(cell.value).startswith('='):
-                            cell_length = 12  # Tamanho estimado para resultados numéricos
-                        else:
-                            cell_length = len(str(cell.value))
-                        max_length = max(max_length, cell_length)
-                except:
-                    pass
-        
-        # Define largura com mínimo de 8 e máximo de 50
-        adjusted_width = min(max(max_length + 2, 8), 50)
-        ws1.column_dimensions[col_letter].width = adjusted_width
-    
-    # Congela painéis (linha 4 em diante rola, cabeçalhos ficam fixos)
-    ws1.freeze_panes = 'A4'
-    
-    # Adiciona filtro automático na linha de cabeçalhos (linha 3, colunas A até X)
-    ultima_linha = 3 + len(df)  # Linha 3 = cabeçalhos, dados começam na linha 4
-    ws1.auto_filter.ref = f"A3:X{ultima_linha}"
-    
-    report_progress(65, "Criando aba J2 - Resumo ICMS")
-    
     # =========================================================================
-    # ABA 2: ANEXO J2 - ICMS DEVIDO (resumo por período com fórmulas)
+    # ABA 1: ANEXO J2 - ICMS DEVIDO (resumo por período) - PRIMEIRA ABA
     # =========================================================================
-    ws2 = wb.create_sheet("ANEXO J2 - ICMS DEVIDO")
-    
+    ws_j2 = wb.active
+    ws_j2.title = "ANEXO J2 - ICMS DEVIDO"
+
     # Cabeçalho institucional
-    ws2.merge_cells('A1:D1')
-    ws2['A1'] = "ESTADO DE SANTA CATARINA"
-    ws2['A1'].font = Font(bold=True, size=14)
-    ws2['A1'].alignment = Alignment(horizontal="center")
-    
-    ws2.merge_cells('A2:D2')
-    ws2['A2'] = "Secretaria de Estado da Fazenda"
-    ws2['A2'].alignment = Alignment(horizontal="center")
-    
-    ws2.merge_cells('A3:D3')
-    ws2['A3'] = "Diretoria de Administração Tributária"
-    ws2['A3'].alignment = Alignment(horizontal="center")
-    
-    ws2.merge_cells('A4:D4')
-    ws2['A4'] = "Gerência de Fiscalização"
-    ws2['A4'].alignment = Alignment(horizontal="center")
-    
+    ws_j2.merge_cells('A1:D1')
+    ws_j2['A1'] = "ESTADO DE SANTA CATARINA"
+    ws_j2['A1'].font = Font(bold=True, size=14)
+    ws_j2['A1'].alignment = Alignment(horizontal="center")
+
+    ws_j2.merge_cells('A2:D2')
+    ws_j2['A2'] = "Secretaria de Estado da Fazenda"
+    ws_j2['A2'].alignment = Alignment(horizontal="center")
+
+    ws_j2.merge_cells('A3:D3')
+    ws_j2['A3'] = "Diretoria de Administração Tributária"
+    ws_j2['A3'].alignment = Alignment(horizontal="center")
+
+    ws_j2.merge_cells('A4:D4')
+    ws_j2['A4'] = "Gerência de Fiscalização"
+    ws_j2['A4'].alignment = Alignment(horizontal="center")
+
     # Informações do contribuinte
-    ws2['A6'] = "CNPJ:"
-    ws2['A6'].font = Font(bold=True)
-    ws2['B6'] = contrib_info.get('cnpj', '') if contrib_info else ''
-    
-    ws2['A7'] = "Razão Social:"
-    ws2['A7'].font = Font(bold=True)
-    ws2['B7'] = contrib_info.get('razao_social', '') if contrib_info else ''
-    
-    # Título da tabela
-    ws2.merge_cells('A10:D10')
-    ws2['A10'] = "APURAÇÃO MENSAL DO VALOR DO ICMS DEVIDO NAS VENDAS DE MERCADORIAS"
-    ws2['A10'].font = Font(bold=True, size=12)
-    ws2['A10'].alignment = Alignment(horizontal="center")
-    
-    # Cabeçalhos da tabela
+    ws_j2['A6'] = "CNPJ:"
+    ws_j2['A6'].font = Font(bold=True)
+    ws_j2['B6'] = contrib_info.get('cnpj', '') if contrib_info else ''
+
+    ws_j2['A7'] = "Razão Social:"
+    ws_j2['A7'].font = Font(bold=True)
+    ws_j2['B7'] = contrib_info.get('razao_social', '') if contrib_info else ''
+
+    # Título da tabela com fundo amarelo
+    ws_j2.merge_cells('A10:D10')
+    ws_j2['A10'] = "APURAÇÃO MENSAL DO VALOR DO ICMS DEVIDO NAS VENDAS DE MERCADORIAS"
+    ws_j2['A10'].font = Font(bold=True, size=12)
+    ws_j2['A10'].fill = header_fill_yellow
+    ws_j2['A10'].alignment = Alignment(horizontal="center")
+
+    # Cabeçalhos da tabela J2
     headers_j2 = ["Período", "ICMS destacado", "ICMS apurado", "ICMS não recolhido"]
     for col_idx, header in enumerate(headers_j2, 1):
-        cell = ws2.cell(row=11, column=col_idx)
+        cell = ws_j2.cell(row=11, column=col_idx)
         cell.value = header
         cell.font = header_font
         cell.fill = header_fill
         cell.alignment = Alignment(horizontal="center", vertical="center")
         cell.border = thin_border
-    
-    # Obtém períodos únicos e ordena cronologicamente (mais antigo primeiro)
+
+    # Ordena dados por data_emissao para processamento
+    if 'data_emissao' in df.columns:
+        df = df.sort_values('data_emissao', ascending=True, na_position='last').reset_index(drop=True)
+
+    # Obtém períodos únicos e ordena cronologicamente
     if 'periodo' in df.columns:
         periodos_unicos = df['periodo'].dropna().unique()
-        # Converte para datetime para ordenação correta, depois ordena
         periodos = sorted(periodos_unicos, key=lambda x: pd.to_datetime(x, dayfirst=True) if isinstance(x, str) else x)
     else:
         periodos = []
-    
-    # Dados por período com fórmulas SUMIF
-    ultima_linha_dados = len(df) + 3  # Linha final dos dados na aba J1
-    
+
+    # Define colunas de referência baseado na estrutura
+    if usar_estrutura_estendida:
+        col_icms_destacado = 'AL'  # Coluna 38: ICMS Destacado na estrutura estendida
+        col_periodo = 'B'
+        col_icms_devido = 'AQ'  # Coluna 43: ICMS devido na estrutura estendida
+    else:
+        col_icms_destacado = 'P'  # Coluna padrão
+        col_periodo = 'B'
+        col_icms_devido = 'W'
+
+    ultima_linha_dados = len(df) + 3
+
     for row_idx, periodo in enumerate(periodos, 12):
-        # Período - formata como DD/MM/YYYY com dayfirst=True para evitar inversão de data
-        cell_a = ws2.cell(row=row_idx, column=1)
+        cell_a = ws_j2.cell(row=row_idx, column=1)
         try:
             if isinstance(periodo, str):
                 cell_a.value = pd.to_datetime(periodo, dayfirst=True).date()
@@ -1339,115 +1308,372 @@ def export_to_excel_template(df: pd.DataFrame, contrib_info: dict, nivel: str, p
             cell_a.value = periodo
         cell_a.border = thin_border
         cell_a.alignment = Alignment(horizontal="center")
-        
-        # ICMS destacado (SUMIF na coluna P da aba J1 onde período = B)
-        cell_b = ws2.cell(row=row_idx, column=2)
-        cell_b.value = f"=SUMIF('ANEXO J1 - NOTAS DE SAÍDAS'!$B$4:$B${ultima_linha_dados},$A{row_idx},'ANEXO J1 - NOTAS DE SAÍDAS'!$P$4:$P${ultima_linha_dados})"
+
+        # ICMS destacado
+        cell_b = ws_j2.cell(row=row_idx, column=2)
+        cell_b.value = f"=SUMIF('ANEXO J1 - NOTAS DE SAÍDAS'!${col_periodo}$4:${col_periodo}${ultima_linha_dados},$A{row_idx},'ANEXO J1 - NOTAS DE SAÍDAS'!${col_icms_destacado}$4:${col_icms_destacado}${ultima_linha_dados})"
         cell_b.number_format = '#,##0.00'
         cell_b.border = thin_border
-        
-        # ICMS apurado/devido (SUMIF na coluna W da aba J1)
-        cell_c = ws2.cell(row=row_idx, column=3)
-        cell_c.value = f"=SUMIF('ANEXO J1 - NOTAS DE SAÍDAS'!$B$4:$B${ultima_linha_dados},$A{row_idx},'ANEXO J1 - NOTAS DE SAÍDAS'!$W$4:$W${ultima_linha_dados})"
+
+        # ICMS apurado/devido
+        cell_c = ws_j2.cell(row=row_idx, column=3)
+        cell_c.value = f"=SUMIF('ANEXO J1 - NOTAS DE SAÍDAS'!${col_periodo}$4:${col_periodo}${ultima_linha_dados},$A{row_idx},'ANEXO J1 - NOTAS DE SAÍDAS'!${col_icms_devido}$4:${col_icms_devido}${ultima_linha_dados})"
         cell_c.number_format = '#,##0.00'
         cell_c.border = thin_border
-        
-        # ICMS não recolhido = ICMS apurado - ICMS destacado
-        cell_d = ws2.cell(row=row_idx, column=4)
+
+        # ICMS não recolhido
+        cell_d = ws_j2.cell(row=row_idx, column=4)
         cell_d.value = f"=C{row_idx}-B{row_idx}"
         cell_d.number_format = '#,##0.00'
         cell_d.border = thin_border
-    
+
     # Linha de TOTAL
     total_row = 12 + len(periodos)
-    ws2.cell(row=total_row, column=1).value = "TOTAL"
-    ws2.cell(row=total_row, column=1).font = Font(bold=True)
-    ws2.cell(row=total_row, column=1).border = thin_border
-    
+    ws_j2.cell(row=total_row, column=1).value = "TOTAL"
+    ws_j2.cell(row=total_row, column=1).font = Font(bold=True)
+    ws_j2.cell(row=total_row, column=1).border = thin_border
+
     for col in range(2, 5):
-        cell = ws2.cell(row=total_row, column=col)
+        cell = ws_j2.cell(row=total_row, column=col)
         cell.value = f"=SUM({chr(64+col)}12:{chr(64+col)}{total_row-1})"
         cell.number_format = '#,##0.00'
         cell.font = Font(bold=True)
         cell.border = thin_border
         cell.fill = PatternFill(start_color="E3F2FD", end_color="E3F2FD", fill_type="solid")
-    
-    # Autoajuste de largura das colunas na aba J2
-    for col_idx in range(1, 5):  # Colunas A até D
+
+    # Autoajuste de largura J2
+    for col_idx in range(1, 5):
         col_letter = get_column_letter(col_idx)
-        max_length = 0
-        
-        for row in ws2.iter_rows(min_row=1, max_row=ws2.max_row, min_col=col_idx, max_col=col_idx):
-            for cell in row:
-                try:
-                    if cell.value:
-                        if str(cell.value).startswith('='):
-                            cell_length = 15  # Tamanho estimado para resultados numéricos/fórmulas
-                        else:
-                            cell_length = len(str(cell.value))
-                        max_length = max(max_length, cell_length)
-                except:
-                    pass
-        
-        adjusted_width = min(max(max_length + 2, 12), 50)
-        ws2.column_dimensions[col_letter].width = adjusted_width
-    
-    report_progress(80, "Criando aba Índice")
-    
+        ws_j2.column_dimensions[col_letter].width = 20
+
+    report_progress(20, "Criando aba Índice")
+
     # =========================================================================
-    # ABA 3: Índice (descrição dos campos)
+    # ABA 2: Índice (descrição dos campos) - SEGUNDA ABA
     # =========================================================================
-    ws3 = wb.create_sheet("Índice")
-    
-    ws3['A1'] = "Campo"
-    ws3['B1'] = "Descrição"
-    ws3['A1'].font = header_font
-    ws3['B1'].font = header_font
-    ws3['A1'].fill = header_fill
-    ws3['B1'].fill = header_fill
-    
+    ws_indice = wb.create_sheet("Índice")
+
+    ws_indice['A1'] = "Campo"
+    ws_indice['B1'] = "Descrição"
+    ws_indice['A1'].font = header_font
+    ws_indice['B1'].font = header_font
+    ws_indice['A1'].fill = header_fill
+    ws_indice['B1'].fill = header_fill
+
+    # Índice padronizado conforme especificação
     indice_dados = [
-        ("Chave de acesso", "Número da chave de acesso das Notas Fiscais. Não aplicável para ECF."),
+        ("Chave de acesso", "Indica do número da chave de acesso das Notas Fiscais. Não é aplicável para as informações da ECF."),
         ("URL", "Link para acessar o documento fiscal (apenas Notas Fiscais)."),
-        ("Tipo Documento", "Fonte da informação: NFe, NFCe ou ECF."),
-        ("Data de emissão", "Data de emissão do documento (Cupom Fiscal: data da Redução Z)."),
-        ("Entrada ou saída", "Indica se a operação é de entrada ou saída."),
-        ("ECF-FAB", "Número de série do Emissor de Cupom Fiscal."),
+        ("Tipo Documento", "Indica a fonte da informação. Podia variar entre Nfe (Nota Fiscal Eletrônica), NFCe (Nota Fiscal do Consumidor Eletrônica) ou ECF (Emissor de Cupom Fiscal)"),
+        ("Data de emissão", "Data de emissão do documento. (No caso de Cupom Fiscal, é a data da Redução Z)"),
+        ("Entrada ou saida", "Indica se a operação é de entrada ou saída de mercadorias."),
+        ("ECF-FAB", "Indica o número de série do Emissor de Cupom Fiscal (ECF). Não aplicável para operações com Notas Fiscais"),
         ("GTIN", "Código GTIN da mercadoria."),
         ("NCM", "Código NCM da mercadoria."),
-        ("No. Nota", "Número da Nota Fiscal."),
-        ("No. Item", "Número do item dentro da Nota Fiscal."),
-        ("Código do produto", "Código do produto declarado pelo contribuinte."),
-        ("Cód. Tot. Par", "Código totalizador (apenas ECF)."),
-        ("ICMS Destacado", "ICMS destacado no documento fiscal pelo contribuinte."),
-        ("Valor da operação", "Base de Cálculo calculada pelo fisco."),
-        ("Alíquota Efetiva Correta", "Alíquota de ICMS considerada pelo fisco."),
-        ("Alíquota Efetiva destacada", "Alíquota efetiva destacada pelo Contribuinte."),
+        ("No. Nota", "Número da Nota Fiscal. Não é aplicável para informações da ECF."),
+        ("No. Item", "Número do item dentro da Nota Fiscal. Não aplicável a Cupons."),
+        ("Origem do Produto", "Informação de Origem do Produto retirado da Nota Fiscal. Não aplicável a ECF (Cupons) - Indica se o produto é nacional ou estrangeiro."),
+        ("Ind Final e Tipo de Operação Final", "Informação de Ind Final retirado da Nota Fiscal. Não aplicável a ECF (Cupons). Indica se o destinatário receberá o produto para revenda/industrialização ou consumo final."),
+        ("TTD 409/410/411", "Indica se o TTD 409, 410 ou 411 estava ativo para o contribuinte no respectivo período da Nota Fiscal. (Aplicável somente para Nfe)"),
+        ("Código do produto", "Código do produto declarado pelo contribuinte para a operação. Válido apenas para Cupons Fiscais"),
+        ("Cód. Tot. Par", "Código totalizador. Informação presenta apenas nas operações ECF."),
+        ("Alíquota Destacada", "Alíquota de ICMS destacada no documento fiscal pelo contribuinte"),
+        ("ICMS Destacado", "ICMS destacado no documento fiscal pelo contribuinte"),
+        ("Valor da operação", "Valor da Base de Cálculo calculada pelo fisco, sem considerar reduções da base de cálculo. As reduções da BC serão aplicadas na alíquota efetiva correta. Para as notas fiscais (NF-e e NFC-e inclui frete, seguro, despesas adicionais , descontado os descontos concedidos). Para os Cupons leva-se em conta apenas o valor declarado na EFD que é o valor efetivo da operação."),
+        ("Alíquota Efetiva Correta (FISCO)", "Alíquota de ICMS considerada pelo fisco para a operação. Aqui considerando eventuais reduções da Base de Cálculo. Para os Cupons fiscais é a alíquota retirada do COD TOT PAR."),
+        ("Alíquota Efetiva destacada pelo Contribuinte", "Alíquota efetiva destacada pelo Contribuinte, que é calculada dividindo o ICMS destacado pelo Valor da Operação sem considerar redução da base de cálculo"),
         ("ICMS devido", "Valor do ICMS considerado como correto pelo fisco."),
-        ("ICMS não-recolhido", "Diferença entre ICMS devido e ICMS destacado.")
+        ("ICMS não-recolhido", "Valor do ICMS a ser recolhido como diferença pelo contribuinte. Trata-se da dedução do valor de 'ICMS devido' pelo valor do campo 'ICMS destacado'")
     ]
-    
+
     for row_idx, (campo, desc) in enumerate(indice_dados, 2):
-        ws3.cell(row=row_idx, column=1).value = campo
-        ws3.cell(row=row_idx, column=2).value = desc
-    
-    # Autoajuste de largura das colunas na aba Índice
-    for col_idx in range(1, 3):  # Colunas A e B
+        ws_indice.cell(row=row_idx, column=1).value = campo
+        ws_indice.cell(row=row_idx, column=2).value = desc
+
+    ws_indice.column_dimensions['A'].width = 35
+    ws_indice.column_dimensions['B'].width = 100
+
+    report_progress(30, "Criando aba J1 - Notas de Saídas")
+
+    # =========================================================================
+    # ABA 3: ANEXO J1 - NOTAS DE SAÍDAS (dados detalhados) - TERCEIRA ABA
+    # =========================================================================
+    ws_j1 = wb.create_sheet("ANEXO J1 - NOTAS DE SAÍDAS")
+
+    # Título J1
+    titulo_j1 = "ANEXO J1"
+    if parte_atual is not None and total_partes is not None:
+        titulo_j1 = f"ANEXO J1 - Parte {parte_atual} de {total_partes}"
+    ws_j1['A1'] = titulo_j1
+    ws_j1['A1'].font = title_font
+
+    # Define headers e mapeamento baseado na estrutura
+    if usar_estrutura_estendida:
+        # Headers estendidos para estrutura padronizada
+        ws_j1['D2'] = "INFORMAÇÕES RETIRADAS DOS DOCUMENTOS FISCAIS (Cupons Fiscais ou NFC-e)"
+        ws_j1['D2'].font = subtitle_font
+        ws_j1['AL2'] = "INFORMAÇÕES DECLARADAS PELO FISCO"
+        ws_j1['AL2'].font = Font(bold=True, size=11, color="C62828")
+
+        headers_j1 = [
+            "Data de emissão",       # A (1)
+            "Período",               # B (2)
+            "Tipo Documento",        # C (3)
+            "Chave de acesso",       # D (4)
+            "Link de Acesso",        # E (5)
+            "ECF-FAB",               # F (6)
+            "Entrada ou saída",      # G (7)
+            "IE Emitente",           # H (8)
+            "CNPJ Emitente",         # I (9)
+            "Razão do Emitente",     # J (10)
+            "IE Destinatário",       # K (11)
+            "CNPJ Destinatário",     # L (12)
+            "CPF Destinatário",      # M (13)
+            "Razão do Destinatário", # N (14)
+            "Estado do Destinatário",# O (15)
+            "UF Entrega",            # P (16)
+            "Regime do Destinatário",# Q (17)
+            "CNAE do Destinatário",  # R (18)
+            "Número da Nota",        # S (19)
+            "Número do Item",        # T (20)
+            "Origem do Produto",     # U (21)
+            "Ind Final",             # V (22)
+            "Tipo de Operação Final",# W (23)
+            "TTD 409/410/411",       # X (24)
+            "GTIN",                  # Y (25)
+            "NCM",                   # Z (26)
+            "CST",                   # AA (27)
+            "Descrição do produto",  # AB (28)
+            "CFOP",                  # AC (29)
+            "Código do Produto",     # AD (30)
+            "Valor Total",           # AE (31)
+            "Valor do Frete",        # AF (32)
+            "Valor do Seguro",       # AG (33)
+            "Valor de Outras Despesas",# AH (34)
+            "Valor do Desconto",     # AI (35)
+            "Cod. Tot. Par",         # AJ (36)
+            "Alíquota Destacada",    # AK (37)
+            "ICMS Destacado",        # AL (38)
+            # FISCO
+            "Valor da Operação",     # AM (39)
+            "Alíquota Efetiva Correta (FISCO)",  # AN (40)
+            "Legislação Aplicável",  # AO (41)
+            "Alíquota Efetiva destacada pelo Contribuinte",  # AP (42)
+            "ICMS devido",           # AQ (43)
+            "ICMS não-recolhido"     # AR (44)
+        ]
+
+        col_fisco_inicio = 39  # Coluna AM
+        total_colunas = 44
+
+        column_mapping = {
+            'data_emissao': 1,
+            'periodo': 2,
+            'tipo_doc': 3,
+            'chave': 4,
+            'modelo_ecf': 6,
+            'entrada_ou_saida': 7,
+            'ie_emitente': 8,
+            'cnpj_emitente': 9,
+            'razao_emitente': 10,
+            'ie_destinatario': 11,
+            'cnpj_destinatario': 12,
+            'cpf_destinatario': 13,
+            'razao_destinatario': 14,
+            'estado_destinatario': 15,
+            'uf_entrega': 16,
+            'regime_destinatario': 17,
+            'cnae_destinatario': 18,
+            'numero_nota': 19,
+            'numero_item': 20,
+            'origem_prod': 21,
+            'ind_final': 22,
+            'ttd_importacao': 24,
+            'gtin': 25,
+            'ncm': 26,
+            'cst': 27,
+            'descricao': 28,
+            'cfop': 29,
+            'cod_prod': 30,
+            'valor_total': 31,
+            'valor_do_frete': 32,
+            'valor_do_seguro': 33,
+            'valor_outras_despesas': 34,
+            'valor_do_desconto': 35,
+            'cod_tot_par': 36,
+            'aliquota_emitente': 37,
+            'icms_emitente': 38,
+            'bc_fisco': 39,
+            'aliquota_ia_icms': 40,
+            'legislacao_ia_icms': 41,
+        }
+
+        # Colunas de fórmulas
+        col_link = 5
+        col_aliq_efetiva = 42
+        col_icms_devido = 43
+        col_icms_nao_recolhido = 44
+        col_bc_fisco = 39
+        col_aliq_correta = 40
+        col_icms_destacado = 38
+
+    else:
+        # Headers padrão (estrutura simples)
+        ws_j1['D2'] = "INFORMAÇÕES RETIRADAS DOS DOCUMENTOS FISCAIS (Cupons Fiscais ou NFC-e)"
+        ws_j1['D2'].font = subtitle_font
+        ws_j1['S2'] = "INFORMAÇÕES DECLARADAS PELO FISCO"
+        ws_j1['S2'].font = Font(bold=True, size=11, color="C62828")
+
+        headers_j1 = [
+            "Data de emissão",      # A
+            "Período",              # B
+            "Tipo Documento",       # C
+            "Chave de acesso",      # D
+            "Link de Acesso",       # E
+            "ECF-FAB",              # F
+            "Entrada ou saída",     # G
+            "CNPJ Emitente",        # H
+            "Razão do Emitente",    # I
+            "Número",               # J
+            "GTIN",                 # K
+            "NCM",                  # L
+            "Item",                 # M
+            "Descrição do produto", # N
+            "CFOP",                 # O
+            "ICMS destacado",       # P
+            "Código do Produto",    # Q
+            "Cód. Tot. Par",        # R
+            "Legislação",           # S (FISCO)
+            "Valor da Operação",    # T (FISCO)
+            "Alíquota ICMS correta",# U (FISCO)
+            "Alíquota ICMS efetiva",# V (FISCO)
+            "ICMS devido",          # W (FISCO)
+            "ICMS não-recolhido"    # X (FISCO)
+        ]
+
+        col_fisco_inicio = 19
+        total_colunas = 24
+
+        column_mapping = {
+            'data_emissao': 1,
+            'periodo': 2,
+            'tipo_doc': 3,
+            'chave': 4,
+            'modelo_ecf': 6,
+            'entrada_ou_saida': 7,
+            'cnpj_emitente': 8,
+            'razao_emitente': 9,
+            'numero_nota': 10,
+            'gtin': 11,
+            'ncm': 12,
+            'numero_item': 13,
+            'descricao': 14,
+            'cfop': 15,
+            'icms_emitente': 16,
+            'cod_prod': 17,
+            'cod_tot_par': 18,
+            'legislacao_ia_icms': 19,
+            'bc_fisco': 20,
+            'aliquota_ia_icms': 21,
+        }
+
+        col_link = 5
+        col_aliq_efetiva = 22
+        col_icms_devido = 23
+        col_icms_nao_recolhido = 24
+        col_bc_fisco = 20
+        col_aliq_correta = 21
+        col_icms_destacado = 16
+
+    # Cabeçalhos da aba J1
+    for col_idx, header in enumerate(headers_j1, 1):
+        cell = ws_j1.cell(row=3, column=col_idx)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill_fisco if col_idx >= col_fisco_inicio else header_fill
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = thin_border
+
+    ws_j1.row_dimensions[3].height = 30
+
+    report_progress(40, "Preenchendo dados da aba J1")
+
+    # Preenche os dados
+    total_rows = len(df)
+    progress_interval = max(1, total_rows // 20)
+
+    for row_idx, row_data in enumerate(df.itertuples(index=False), 4):
+        atual_row = row_idx - 4
+        if atual_row % progress_interval == 0:
+            pct = 40 + int((atual_row / total_rows) * 40)
+            report_progress(pct, f"Processando linha {atual_row:,} de {total_rows:,}")
+
+        row_dict = row_data._asdict()
+
+        for col_name, col_idx in column_mapping.items():
+            if col_name in row_dict:
+                cell = ws_j1.cell(row=row_idx, column=col_idx)
+                value = row_dict[col_name]
+
+                if col_name in ['data_emissao', 'periodo'] and pd.notna(value):
+                    try:
+                        if isinstance(value, str):
+                            cell.value = pd.to_datetime(value, dayfirst=True).date()
+                        else:
+                            cell.value = value
+                        cell.number_format = 'DD/MM/YYYY'
+                    except:
+                        cell.value = value
+                elif col_name in ['icms_emitente', 'bc_fisco', 'valor_total', 'valor_do_frete',
+                                  'valor_do_seguro', 'valor_outras_despesas', 'valor_do_desconto'] and pd.notna(value):
+                    try:
+                        cell.value = float(value)
+                        cell.number_format = '#,##0.00'
+                    except:
+                        cell.value = value
+                elif col_name in ['aliquota_ia_icms', 'aliquota_emitente'] and pd.notna(value):
+                    try:
+                        cell.value = float(value) / 100
+                        cell.number_format = '0.00%'
+                    except:
+                        cell.value = value
+                else:
+                    cell.value = value if pd.notna(value) else ''
+
+                cell.border = thin_border
+
+        # Fórmula Link de Acesso
+        cell_link = ws_j1.cell(row=row_idx, column=col_link)
+        cell_link.value = f'=IF({get_column_letter(4)}{row_idx}<>"",HYPERLINK("https://sat.sef.sc.gov.br/tax.NET/Sat.NFe.Web/Consultas/Nfe_ResumoPDF.ashx?id="&{get_column_letter(4)}{row_idx},"Abrir DANFE"),"")'
+        cell_link.border = thin_border
+
+        # Fórmula Alíquota ICMS efetiva
+        cell_aliq = ws_j1.cell(row=row_idx, column=col_aliq_efetiva)
+        cell_aliq.value = f"=IF({get_column_letter(col_bc_fisco)}{row_idx}=0,0,{get_column_letter(col_icms_destacado)}{row_idx}/{get_column_letter(col_bc_fisco)}{row_idx})"
+        cell_aliq.number_format = '0.00%'
+        cell_aliq.border = thin_border
+
+        # Fórmula ICMS devido
+        cell_devido = ws_j1.cell(row=row_idx, column=col_icms_devido)
+        cell_devido.value = f"=ROUND({get_column_letter(col_bc_fisco)}{row_idx}*{get_column_letter(col_aliq_correta)}{row_idx},2)"
+        cell_devido.number_format = '#,##0.00'
+        cell_devido.border = thin_border
+
+        # Fórmula ICMS não-recolhido
+        cell_nao_rec = ws_j1.cell(row=row_idx, column=col_icms_nao_recolhido)
+        cell_nao_rec.value = f"=MAX(0,ROUND({get_column_letter(col_icms_devido)}{row_idx}-{get_column_letter(col_icms_destacado)}{row_idx},2))"
+        cell_nao_rec.number_format = '#,##0.00'
+        cell_nao_rec.border = thin_border
+
+    # Autoajuste de largura J1
+    for col_idx in range(1, total_colunas + 1):
         col_letter = get_column_letter(col_idx)
-        max_length = 0
-        
-        for row in ws3.iter_rows(min_row=1, max_row=ws3.max_row, min_col=col_idx, max_col=col_idx):
-            for cell in row:
-                try:
-                    if cell.value:
-                        cell_length = len(str(cell.value))
-                        max_length = max(max_length, cell_length)
-                except:
-                    pass
-        
-        adjusted_width = min(max(max_length + 2, 10), 100)
-        ws3.column_dimensions[col_letter].width = adjusted_width
-    
+        ws_j1.column_dimensions[col_letter].width = 15
+
+    ws_j1.freeze_panes = 'A4'
+    ultima_linha = 3 + len(df)
+    ws_j1.auto_filter.ref = f"A3:{get_column_letter(total_colunas)}{ultima_linha}"
+
     report_progress(90, "Configurando recálculo automático")
     
     # =========================================================================
@@ -1470,16 +1696,17 @@ def export_to_excel_template(df: pd.DataFrame, contrib_info: dict, nivel: str, p
     
     return buffer.getvalue()
 
-def export_to_excel_or_zip(df: pd.DataFrame, contrib_info: dict, nivel: str, progress_callback=None) -> tuple:
+def export_to_excel_or_zip(df: pd.DataFrame, contrib_info: dict, nivel: str, progress_callback=None, grupo: str = None) -> tuple:
     """
     Exporta DataFrame para Excel ou ZIP (se mais de 1 milhão de linhas).
-    
+
     Args:
         df: DataFrame com os dados
         contrib_info: Informações do contribuinte
         nivel: Nível de acurácia
         progress_callback: Função callback(current, total, message) para atualizar progresso
-    
+        grupo: Grupo de operação para determinar estrutura de colunas
+
     Returns:
         tuple: (bytes_data, filename, is_zip)
             - bytes_data: conteúdo do arquivo
@@ -1487,42 +1714,43 @@ def export_to_excel_or_zip(df: pd.DataFrame, contrib_info: dict, nivel: str, pro
             - is_zip: True se for ZIP, False se for Excel único
     """
     total_rows = len(df)
-    
+
     # Se cabe em um único arquivo Excel
     if total_rows <= MAX_ROWS_PER_EXCEL:
         if progress_callback:
             progress_callback(0, 1, "Gerando arquivo Excel...")
-        excel_data = export_to_excel_template(df, contrib_info, nivel)
+        excel_data = export_to_excel_template(df, contrib_info, nivel, grupo=grupo)
         if progress_callback:
             progress_callback(1, 1, "Arquivo Excel gerado!")
         filename = get_export_filename(contrib_info, nivel, "xlsx")
         return excel_data, filename, False
-    
+
     # Precisa dividir em múltiplas partes
     total_partes = math.ceil(total_rows / MAX_ROWS_PER_EXCEL)
-    
+
     # Cria buffer para o ZIP
     zip_buffer = BytesIO()
-    
+
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         for parte in range(1, total_partes + 1):
             if progress_callback:
                 progress_callback(parte - 1, total_partes, f"Gerando parte {parte} de {total_partes}...")
-            
+
             # Calcula índices de início e fim
             start_idx = (parte - 1) * MAX_ROWS_PER_EXCEL
             end_idx = min(parte * MAX_ROWS_PER_EXCEL, total_rows)
-            
+
             # Extrai a parte do DataFrame
             df_parte = df.iloc[start_idx:end_idx].copy()
-            
+
             # Gera o Excel para esta parte
             excel_data = export_to_excel_template(
-                df_parte, 
-                contrib_info, 
-                nivel, 
-                parte_atual=parte, 
-                total_partes=total_partes
+                df_parte,
+                contrib_info,
+                nivel,
+                parte_atual=parte,
+                total_partes=total_partes,
+                grupo=grupo
             )
             
             # Nome do arquivo da parte
@@ -1616,34 +1844,41 @@ def _smb_write_with_retry(filepath: str, data: bytes, max_retries: int = 2) -> N
     if last_error:
         raise last_error
 
-def save_to_network_fast(df: pd.DataFrame, contrib_info: dict, nivel: str, progress_callback=None) -> tuple:
+def save_to_network_fast(df: pd.DataFrame, contrib_info: dict, nivel: str, progress_callback=None, grupo: str = None) -> tuple:
     """
     Salva os arquivos Excel diretamente na rede usando smbclient.
     Usa a função export_to_excel_template para manter a estrutura do Anexo J.
-    
+
+    Args:
+        df: DataFrame com os dados
+        contrib_info: Informações do contribuinte
+        nivel: Nível de acurácia
+        progress_callback: Função callback para progresso
+        grupo: Grupo de operação para determinar estrutura de colunas
+
     Returns:
         tuple: (success, message, file_paths, folder_path)
     """
     if not SMB_AVAILABLE:
         return False, "Biblioteca smbclient não disponível. Instale com: pip install smbprotocol", [], REDE_PATH
-    
+
     total_rows = len(df)
     file_paths = []
-    
+
     try:
         # Se cabe em um único arquivo
         if total_rows <= MAX_ROWS_PER_EXCEL:
             if progress_callback:
                 progress_callback(0, 1, "Gerando arquivo Excel com template Anexo J...")
-            
+
             # Callback interno para repassar progresso
             def internal_progress(pct, msg):
                 if progress_callback:
                     # Converte pct (0-100) para (current, total, msg)
                     progress_callback(pct / 100 * 0.8, 1, msg)  # 0-80% para geração
-            
+
             # Usa export_to_excel_template para manter a estrutura correta
-            excel_data = export_to_excel_template(df, contrib_info, nivel, progress_callback=internal_progress)
+            excel_data = export_to_excel_template(df, contrib_info, nivel, progress_callback=internal_progress, grupo=grupo)
             
             filename = get_export_filename(contrib_info, nivel, "xlsx")
             filepath = f"{REDE_PATH}\\{filename}"
@@ -1686,7 +1921,7 @@ def save_to_network_fast(df: pd.DataFrame, contrib_info: dict, nivel: str, progr
             excel_data = export_to_excel_template(
                 df_parte, contrib_info, nivel,
                 parte_atual=parte, total_partes=total_partes,
-                progress_callback=internal_progress_parte
+                progress_callback=internal_progress_parte, grupo=grupo
             )
             
             # Nome e caminho do arquivo
@@ -1909,32 +2144,39 @@ def diagnostico_rede() -> dict:
     return resultados
 
 
-def save_to_network(df: pd.DataFrame, contrib_info: dict, nivel: str, progress_callback=None) -> tuple:
+def save_to_network(df: pd.DataFrame, contrib_info: dict, nivel: str, progress_callback=None, grupo: str = None) -> tuple:
     """
     Salva os arquivos Excel diretamente na rede, evitando consumo de memória.
-    
+
+    Args:
+        df: DataFrame com os dados
+        contrib_info: Informações do contribuinte
+        nivel: Nível de acurácia
+        progress_callback: Função callback para progresso
+        grupo: Grupo de operação para determinar estrutura de colunas
+
     Returns:
         tuple: (success, message, file_paths)
     """
     if not SMB_AVAILABLE:
         return False, "Biblioteca smbclient não disponível", []
-    
+
     total_rows = len(df)
     file_paths = []
-    
+
     try:
         # Cria diretório se não existir
         try:
             smbclient.makedirs(REDE_PATH, exist_ok=True)
         except:
             pass  # Diretório pode já existir
-        
+
         # Se cabe em um único arquivo
         if total_rows <= MAX_ROWS_PER_EXCEL:
             if progress_callback:
                 progress_callback(0, 1, "Gerando arquivo Excel...")
-            
-            excel_data = export_to_excel_template(df, contrib_info, nivel)
+
+            excel_data = export_to_excel_template(df, contrib_info, nivel, grupo=grupo)
             filename = get_export_filename(contrib_info, nivel, "xlsx")
             filepath = f"{REDE_PATH}\\{filename}"
             
@@ -1965,14 +2207,14 @@ def save_to_network(df: pd.DataFrame, contrib_info: dict, nivel: str, progress_c
             # Gera o Excel
             excel_data = export_to_excel_template(
                 df_parte, contrib_info, nivel,
-                parte_atual=parte, total_partes=total_partes
+                parte_atual=parte, total_partes=total_partes, grupo=grupo
             )
-            
+
             # Nome e caminho do arquivo
             base_filename = get_export_filename(contrib_info, nivel, "xlsx")
             parte_filename = base_filename.replace(".xlsx", f" - Parte {parte} de {total_partes}.xlsx")
             filepath = f"{REDE_PATH}\\{parte_filename}"
-            
+
             # Salva na rede
             with smbclient.open_file(filepath, mode="wb") as f:
                 f.write(excel_data)
@@ -5506,7 +5748,7 @@ def render_operacao_fiscal(engine, grupo: str):
                                 progress_bar.progress(pct, text=f"{msg} ({pct}%)")
                             
                             success, message, file_paths, _ = save_to_network_fast(
-                                df_export, contrib_info, nivel_atual, progress_callback
+                                df_export, contrib_info, nivel_atual, progress_callback, grupo=grupo_selecionado
                             )
                             
                             progress_bar.progress(100, text="✅ Concluído (100%)")
@@ -5540,7 +5782,8 @@ def render_operacao_fiscal(engine, grupo: str):
                             # Chama a função de exportação com callback
                             excel_bytes = export_to_excel_template(
                                 df_export, contrib_info, nivel_atual,
-                                progress_callback=progress_callback_download
+                                progress_callback=progress_callback_download,
+                                grupo=grupo_selecionado
                             )
                             
                             st.session_state[cache_key] = excel_bytes
