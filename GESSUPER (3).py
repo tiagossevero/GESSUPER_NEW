@@ -43,49 +43,6 @@ try:
 except ImportError:
     SMB_AVAILABLE = False
 
-# Flag para controlar se a sessão SMB foi registrada
-_SMB_SESSION_REGISTERED = False
-
-def _register_smb_session():
-    """
-    Registra sessão SMB com credenciais do secrets.toml.
-    Deve ser chamada antes de usar smbclient.
-
-    Espera no secrets.toml:
-    [smb_credentials]
-    username = "DOMINIO\\usuario" ou "usuario"
-    password = "senha"
-    domain = "DOMINIO"  # opcional se já incluído no username
-    """
-    global _SMB_SESSION_REGISTERED
-
-    if _SMB_SESSION_REGISTERED or not SMB_AVAILABLE:
-        return
-
-    try:
-        # Tenta ler credenciais do secrets.toml
-        if "smb_credentials" in st.secrets:
-            smb_creds = st.secrets["smb_credentials"]
-            username = smb_creds.get("username", "")
-            password = smb_creds.get("password", "")
-            domain = smb_creds.get("domain", "")
-
-            # Se domain separado, adiciona ao username
-            if domain and "\\" not in username and "@" not in username:
-                username = f"{domain}\\{username}"
-
-            if username and password:
-                # Registra sessão para o servidor DFS
-                smbclient.register_session(
-                    "sef.sc.gov.br",
-                    username=username,
-                    password=password
-                )
-                _SMB_SESSION_REGISTERED = True
-    except Exception as e:
-        # Silenciosamente falha - tentará sem autenticação explícita
-        pass
-
 # Limite de linhas por arquivo Excel (Excel suporta 1.048.576, usamos 1.000.000 para segurança)
 MAX_ROWS_PER_EXCEL = 1000000
 
@@ -1613,74 +1570,44 @@ def get_folder_link(path: str) -> str:
     """
     return path
 
-def _save_file_to_network(filepath: str, data: bytes) -> None:
-    """
-    Salva arquivo na rede, tentando primeiro acesso nativo do Windows (melhor para DFS),
-    depois smbclient como fallback.
-    """
-    import platform
-    import os
-
-    # Tenta acesso nativo do Windows primeiro (melhor suporte DFS)
-    if platform.system() == 'Windows':
-        try:
-            with open(filepath, 'wb') as f:
-                f.write(data)
-            return  # Sucesso via Windows nativo
-        except Exception:
-            pass  # Fallback para smbclient
-
-    # Linux ou fallback: usa smbclient com autenticação
-    if SMB_AVAILABLE:
-        _register_smb_session()  # Registra credenciais do secrets.toml
-        with smbclient.open_file(filepath, mode="wb") as f:
-            f.write(data)
-    else:
-        raise RuntimeError("Nenhum método de acesso à rede disponível")
-
-
 def save_to_network_fast(df: pd.DataFrame, contrib_info: dict, nivel: str, progress_callback=None) -> tuple:
     """
-    Salva os arquivos Excel diretamente na rede.
-    Tenta primeiro usar acesso nativo do Windows (melhor para DFS),
-    depois smbclient como fallback.
-
+    Salva os arquivos Excel diretamente na rede usando smbclient.
+    Usa a função export_to_excel_template para manter a estrutura do Anexo J.
+    
     Returns:
         tuple: (success, message, file_paths, folder_path)
     """
-    import platform
-
-    # Verifica se temos algum método de acesso disponível
-    is_windows = platform.system() == 'Windows'
-    if not SMB_AVAILABLE and not is_windows:
+    if not SMB_AVAILABLE:
         return False, "Biblioteca smbclient não disponível. Instale com: pip install smbprotocol", [], REDE_PATH
-
+    
     total_rows = len(df)
     file_paths = []
-
+    
     try:
         # Se cabe em um único arquivo
         if total_rows <= MAX_ROWS_PER_EXCEL:
             if progress_callback:
                 progress_callback(0, 1, "Gerando arquivo Excel com template Anexo J...")
-
+            
             # Callback interno para repassar progresso
             def internal_progress(pct, msg):
                 if progress_callback:
                     # Converte pct (0-100) para (current, total, msg)
                     progress_callback(pct / 100 * 0.8, 1, msg)  # 0-80% para geração
-
+            
             # Usa export_to_excel_template para manter a estrutura correta
             excel_data = export_to_excel_template(df, contrib_info, nivel, progress_callback=internal_progress)
-
+            
             filename = get_export_filename(contrib_info, nivel, "xlsx")
             filepath = f"{REDE_PATH}\\{filename}"
-
+            
             if progress_callback:
                 progress_callback(0.85, 1, "Salvando na rede...")
-
-            # Salva na rede usando o método disponível
-            _save_file_to_network(filepath, excel_data)
+            
+            # Salva na rede usando smbclient
+            with smbclient.open_file(filepath, mode="wb") as f:
+                f.write(excel_data)
             
             file_paths.append(filepath)
             
@@ -1722,18 +1649,19 @@ def save_to_network_fast(df: pd.DataFrame, contrib_info: dict, nivel: str, progr
             parte_filename = base_filename.replace(".xlsx", f" - Parte {parte} de {total_partes}.xlsx")
             filepath = f"{REDE_PATH}\\{parte_filename}"
             
-            # Salva na rede usando o método disponível
-            _save_file_to_network(filepath, excel_data)
-
+            # Salva na rede usando smbclient
+            with smbclient.open_file(filepath, mode="wb") as f:
+                f.write(excel_data)
+            
             file_paths.append(filepath)
-
+            
             # Libera memória
             del excel_data
             del df_parte
-
+            
             if progress_callback:
                 progress_callback(parte, total_partes, f"Parte {parte} de {total_partes} salva!")
-
+        
         return True, f"{total_partes} arquivos salvos com sucesso!", file_paths, REDE_PATH
 
     except Exception as e:
@@ -1754,30 +1682,26 @@ def save_to_network_fast(df: pd.DataFrame, contrib_info: dict, nivel: str, progr
 
 def save_csv_to_network(df: pd.DataFrame, contrib_info: dict, nivel: str) -> tuple:
     """
-    Salva CSV diretamente na rede.
-    Tenta primeiro usar acesso nativo do Windows (melhor para DFS),
-    depois smbclient como fallback.
+    Salva CSV diretamente na rede usando smbclient.
     Formato brasileiro: separador (;), decimal (,), encoding latin-1
-
+    
     Returns:
         tuple: (success, message, filepath, folder_path)
     """
-    import platform
-
-    is_windows = platform.system() == 'Windows'
-    if not SMB_AVAILABLE and not is_windows:
+    if not SMB_AVAILABLE:
         return False, "Biblioteca smbclient não disponível. Instale com: pip install smbprotocol", None, REDE_PATH
-
+    
     try:
         filename = get_export_filename(contrib_info, nivel, "csv")
         filepath = f"{REDE_PATH}\\{filename}"
-
+        
         # Gera CSV em memória no formato brasileiro
         csv_str = df.to_csv(index=False, sep=";", decimal=",")
         csv_bytes = csv_str.encode("latin-1", errors="replace")
         
-        # Salva na rede usando o método disponível
-        _save_file_to_network(filepath, csv_bytes)
+        # Salva na rede usando smbclient
+        with smbclient.open_file(filepath, mode="wb") as f:
+            f.write(csv_bytes)
         
         return True, "CSV salvo com sucesso!", filepath, REDE_PATH
 
@@ -1801,8 +1725,6 @@ def diagnostico_rede() -> dict:
     """
     from datetime import datetime
     import traceback
-    import subprocess
-    import os
 
     resultados = {
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -1827,84 +1749,7 @@ def diagnostico_rede() -> dict:
         'detalhes': None
     })
 
-    # Teste: Registrar sessão SMB com credenciais do secrets.toml
-    try:
-        _register_smb_session()
-        if _SMB_SESSION_REGISTERED:
-            resultados['testes'].append({
-                'nome': 'Autenticação SMB',
-                'status': 'OK',
-                'mensagem': 'Credenciais carregadas do secrets.toml',
-                'detalhes': None
-            })
-        else:
-            resultados['testes'].append({
-                'nome': 'Autenticação SMB',
-                'status': 'AVISO',
-                'mensagem': 'Sem credenciais configuradas - adicione [smb_credentials] no secrets.toml',
-                'detalhes': 'username, password, domain'
-            })
-    except Exception as e:
-        resultados['testes'].append({
-            'nome': 'Autenticação SMB',
-            'status': 'AVISO',
-            'mensagem': f'Erro ao registrar credenciais: {str(e)[:100]}',
-            'detalhes': None
-        })
-
-    # Teste 0: Verificar acesso via sistema (net use / mount)
-    try:
-        # Tenta verificar se o caminho está acessível via Windows net view
-        import platform
-        if platform.system() == 'Windows':
-            # Windows: tenta acessar diretamente
-            if os.path.exists(REDE_PATH):
-                resultados['testes'].append({
-                    'nome': 'Acesso Windows',
-                    'status': 'OK',
-                    'mensagem': 'Pasta acessível pelo Windows',
-                    'detalhes': None
-                })
-            else:
-                resultados['testes'].append({
-                    'nome': 'Acesso Windows',
-                    'status': 'AVISO',
-                    'mensagem': 'Pasta não encontrada pelo Windows - tente acessar no Explorer primeiro',
-                    'detalhes': f'Abra: {REDE_PATH}'
-                })
-        else:
-            resultados['testes'].append({
-                'nome': 'Sistema',
-                'status': 'INFO',
-                'mensagem': f'Sistema: {platform.system()} - usando smbclient puro',
-                'detalhes': None
-            })
-    except Exception as e:
-        resultados['testes'].append({
-            'nome': 'Acesso Sistema',
-            'status': 'AVISO',
-            'mensagem': f'Não foi possível verificar acesso: {str(e)[:100]}',
-            'detalhes': None
-        })
-
-    # Teste 1: Resetar cache de sessão SMB (pode ajudar com DFS)
-    try:
-        smbclient.reset_connection_cache()
-        resultados['testes'].append({
-            'nome': 'Reset Cache SMB',
-            'status': 'OK',
-            'mensagem': 'Cache de conexões resetado',
-            'detalhes': None
-        })
-    except Exception as e:
-        resultados['testes'].append({
-            'nome': 'Reset Cache SMB',
-            'status': 'AVISO',
-            'mensagem': f'Falha ao resetar cache: {str(e)[:100]}',
-            'detalhes': None
-        })
-
-    # Teste 2: Listar diretório
+    # Teste 1: Listar diretório
     try:
         arquivos = smbclient.listdir(REDE_PATH)
         resultados['testes'].append({
@@ -1914,39 +1759,11 @@ def diagnostico_rede() -> dict:
             'detalhes': arquivos[:10] if len(arquivos) > 10 else arquivos
         })
     except Exception as e:
-        error_str = str(e)
-        error_code = ""
-        sugestao = ""
-
-        # Detecta tipo de erro DFS
-        if "0xc000035c" in error_str or "STATUS_UNKNOWN" in error_str:
-            error_code = "DFS_REFERRAL"
-            sugestao = """
-**Erro de DFS Referral** - O servidor DFS não está respondendo corretamente.
-
-**Soluções (tente na ordem):**
-1. 📂 **Acesse a pasta no Explorer do Windows primeiro** - isso estabelece a conexão DFS
-2. 🔄 **Reinicie o kernel do Jupyter/Streamlit**
-3. 🔐 **Faça logout/login no Windows** para renovar credenciais
-4. ⏰ **Aguarde 1-2 minutos** e tente novamente (timeout de DFS)
-"""
-        elif "0xc0000022" in error_str or "ACCESS_DENIED" in error_str:
-            error_code = "ACCESS_DENIED"
-            sugestao = "Sem permissão de acesso. Verifique suas credenciais de rede."
-        elif "0xc0000034" in error_str or "NOT_FOUND" in error_str:
-            error_code = "NOT_FOUND"
-            sugestao = "Caminho não encontrado. Verifique se o caminho está correto."
-        elif "0xc00000b5" in error_str or "LOGON_FAILURE" in error_str:
-            error_code = "LOGON_FAILURE"
-            sugestao = "Falha de autenticação. Faça logout/login no Windows."
-        else:
-            sugestao = "Erro desconhecido. Tente acessar a pasta no Explorer primeiro."
-
         resultados['testes'].append({
             'nome': 'Listar diretório',
             'status': 'ERRO',
-            'mensagem': f'{error_str[:200]}',
-            'detalhes': f"**Código:** {error_code}\n\n{sugestao}\n\n**Traceback:**\n{traceback.format_exc()}"
+            'mensagem': str(e)[:300],
+            'detalhes': traceback.format_exc()
         })
         # Se não conseguiu listar, não adianta continuar
         return resultados
