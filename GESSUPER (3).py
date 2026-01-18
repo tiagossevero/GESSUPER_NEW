@@ -6024,8 +6024,8 @@ def render_operacao_fiscal(engine, grupo: str):
                                 st.session_state[cache_key_ncm] = df_ncm
 
                             df_ncm = st.session_state[cache_key_ncm].copy()
-                            max_valor = df_ncm['Valor'].max() if len(df_ncm) > 0 else 1
-                            max_itens = df_ncm['Itens'].max() if len(df_ncm) > 0 else 1
+                            max_valor = float(df_ncm['Valor'].max()) if len(df_ncm) > 0 else 1.0
+                            max_itens = int(df_ncm['Itens'].max()) if len(df_ncm) > 0 else 1
 
                             # Tabela com progress bars
                             st.dataframe(
@@ -6069,8 +6069,8 @@ def render_operacao_fiscal(engine, grupo: str):
                                 st.session_state[cache_key_cfop] = df_cfop
 
                             df_cfop = st.session_state[cache_key_cfop].copy()
-                            max_valor = df_cfop['Valor'].max() if len(df_cfop) > 0 else 1
-                            max_itens = df_cfop['Itens'].max() if len(df_cfop) > 0 else 1
+                            max_valor = float(df_cfop['Valor'].max()) if len(df_cfop) > 0 else 1.0
+                            max_itens = int(df_cfop['Itens'].max()) if len(df_cfop) > 0 else 1
 
                             # Tabela com progress bars
                             st.dataframe(
@@ -6109,8 +6109,8 @@ def render_operacao_fiscal(engine, grupo: str):
                             st.session_state[cache_key_prod] = df_prod
 
                         df_prod = st.session_state[cache_key_prod].copy()
-                        max_valor = df_prod['Valor'].max() if len(df_prod) > 0 else 1
-                        max_itens = df_prod['Itens'].max() if len(df_prod) > 0 else 1
+                        max_valor = float(df_prod['Valor'].max()) if len(df_prod) > 0 else 1.0
+                        max_itens = int(df_prod['Itens'].max()) if len(df_prod) > 0 else 1
 
                         # Tabela com progress bars
                         st.dataframe(
