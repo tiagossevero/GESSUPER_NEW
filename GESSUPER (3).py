@@ -5905,47 +5905,59 @@ def render_operacao_fiscal(engine, grupo: str):
                         col1, col2, col3, col4 = st.columns(4)
                         col1.metric("Média", format_currency_br(media))
 
-                        # Mediana com comparativo vs média
-                        diff_mediana_pct = ((stats['50%'] / media) - 1) * 100 if media > 0 else 0
-                        col2.metric(
-                            "Mediana",
-                            format_currency_br(stats['50%']),
-                            delta=f"{diff_mediana_pct:+.1f}% vs. média",
-                            delta_color="off"
-                        )
+                        # Mediana com comparativo vs média (verde se acima, vermelho se abaixo)
+                        if media > 0 and stats['50%'] > 0:
+                            diff_mediana_pct = ((stats['50%'] / media) - 1) * 100
+                            col2.metric(
+                                "Mediana",
+                                format_currency_br(stats['50%']),
+                                delta=f"{diff_mediana_pct:+.1f}% vs. média",
+                                delta_color="normal"
+                            )
+                        else:
+                            col2.metric("Mediana", format_currency_br(stats['50%']))
 
                         col3.metric("Mínimo", format_currency_br(stats['min']))
 
                         # Máximo com comparativo vs média
-                        diff_max_x = stats['max'] / media if media > 0 else 0
-                        col4.metric(
-                            "Máximo",
-                            format_currency_br(stats['max']),
-                            delta=f"{diff_max_x:.1f}x a média",
-                            delta_color="off"
-                        )
+                        if media > 0:
+                            diff_max_x = stats['max'] / media
+                            col4.metric(
+                                "Máximo",
+                                format_currency_br(stats['max']),
+                                delta=f"{diff_max_x:.1f}x a média",
+                                delta_color="off"
+                            )
+                        else:
+                            col4.metric("Máximo", format_currency_br(stats['max']))
 
                         col1, col2, col3, col4 = st.columns(4)
                         col1.metric("Total", format_currency_br(stats['mean'] * stats['count']))
                         col2.metric("Qtd. Itens", format_number_br(int(stats['count'])))
 
-                        # Desvio Padrão com comparativo vs média (coeficiente de variação)
-                        cv_pct = (stats['std'] / media) * 100 if media > 0 else 0
-                        col3.metric(
-                            "Desvio Padrão",
-                            format_currency_br(stats['std']),
-                            delta=f"CV: {cv_pct:.1f}%",
-                            delta_color="off"
-                        )
+                        # Desvio Padrão com coeficiente de variação
+                        if media > 0:
+                            cv_pct = (stats['std'] / media) * 100
+                            col3.metric(
+                                "Desvio Padrão",
+                                format_currency_br(stats['std']),
+                                delta=f"CV: {cv_pct:.1f}%",
+                                delta_color="off"
+                            )
+                        else:
+                            col3.metric("Desvio Padrão", format_currency_br(stats['std']))
 
-                        # 75º Percentil com comparativo vs média
-                        diff_p75_pct = ((stats['75%'] / media) - 1) * 100 if media > 0 else 0
-                        col4.metric(
-                            "75º Percentil",
-                            format_currency_br(stats['75%']),
-                            delta=f"{diff_p75_pct:+.1f}% vs. média",
-                            delta_color="off"
-                        )
+                        # 75º Percentil com comparativo vs média (verde se acima, vermelho se abaixo)
+                        if media > 0 and stats['75%'] > 0:
+                            diff_p75_pct = ((stats['75%'] / media) - 1) * 100
+                            col4.metric(
+                                "75º Percentil",
+                                format_currency_br(stats['75%']),
+                                delta=f"{diff_p75_pct:+.1f}% vs. média",
+                                delta_color="normal"
+                            )
+                        else:
+                            col4.metric("75º Percentil", format_currency_br(stats['75%']))
                     else:
                         st.warning("⚠️ Não há dados numéricos válidos para calcular estatísticas.")
                 
@@ -6102,7 +6114,7 @@ def render_operacao_fiscal(engine, grupo: str):
                                 st.markdown(f"**{idx+1}. {cfop_code}**" + (f" - {descricao}" if descricao else ""))
                                 st.caption(f"   💰 {row['Valor_fmt']} | 📦 {row['Qtd_fmt']} itens | {pct:.1f}%")
                 
-                # ----- PRODUTOS (HEATMAP TOP 10) -----
+                # ----- PRODUTOS (TOP 10) -----
                 with st.expander("📦 Top 10 Produtos", expanded=False):
                     if 'descricao' in df_analise.columns:
                         if f"{agg_key}_prod" not in st.session_state:
@@ -6112,32 +6124,40 @@ def render_operacao_fiscal(engine, grupo: str):
                             df_prod.columns = ['Produto', 'Valor', 'Qtd']
                             df_prod = df_prod.nlargest(10, 'Valor').reset_index(drop=True)
                             st.session_state[f"{agg_key}_prod"] = df_prod
-                        
-                        df_prod = st.session_state[f"{agg_key}_prod"]
-                        
-                        # Heatmap com Plotly
-                        fig = px.imshow(
-                            df_prod[['Valor']].T,
-                            labels=dict(x="Produto", y="", color="Valor (R$)"),
-                            x=df_prod['Produto'].apply(lambda x: x[:30] + '...' if len(str(x)) > 30 else x),
-                            y=['Valor'],
-                            color_continuous_scale='Blues',
-                            aspect='auto'
-                        )
-                        fig.update_layout(
-                            title="🔥 Heatmap - Top 10 Produtos por Valor",
-                            height=120,
-                            xaxis_tickangle=-45,
-                            margin=dict(t=30, b=10, l=10, r=10)
-                        )
-                        st.plotly_chart(fig, use_container_width=True, key="heatmap_produtos")
 
-                        # Tabela detalhada
-                        st.markdown("##### 📋 Detalhamento")
-                        for i, row in df_prod.iterrows():
-                            pct = (row['Valor'] / df_prod['Valor'].sum()) * 100
-                            st.markdown(f"**{i+1}.** {row['Produto'][:50]}{'...' if len(str(row['Produto'])) > 50 else ''}")
-                            st.caption(f"   💰 {format_currency_br(row['Valor'])} | 📦 {row['Qtd']:,} itens | {pct:.1f}%")
+                        df_prod = st.session_state[f"{agg_key}_prod"]
+
+                        # Layout em 2 colunas: Detalhamento | Heatmap
+                        col_detalhe, col_heatmap = st.columns([1, 1])
+
+                        with col_detalhe:
+                            st.markdown("##### 📋 Detalhamento")
+                            for i, row in df_prod.iterrows():
+                                pct = (row['Valor'] / df_prod['Valor'].sum()) * 100
+                                st.markdown(f"**{i+1}.** {row['Produto'][:45]}{'...' if len(str(row['Produto'])) > 45 else ''}")
+                                st.caption(f"   💰 {format_currency_br(row['Valor'])} | 📦 {row['Qtd']:,} itens | {pct:.1f}%")
+
+                        with col_heatmap:
+                            st.markdown("##### 🔥 Heatmap por Valor")
+                            # Heatmap vertical com Plotly
+                            fig = px.bar(
+                                df_prod,
+                                y=df_prod['Produto'].apply(lambda x: x[:25] + '...' if len(str(x)) > 25 else x),
+                                x='Valor',
+                                orientation='h',
+                                color='Valor',
+                                color_continuous_scale='Blues'
+                            )
+                            fig.update_layout(
+                                height=350,
+                                margin=dict(t=10, b=10, l=10, r=10),
+                                showlegend=False,
+                                xaxis_title="",
+                                yaxis_title="",
+                                coloraxis_showscale=False
+                            )
+                            fig.update_yaxes(autorange="reversed")
+                            st.plotly_chart(fig, use_container_width=True, key="heatmap_produtos")
                 
                 # ----- DADOS -----
                 with st.expander("📋 Visualizar Dados", expanded=False):
