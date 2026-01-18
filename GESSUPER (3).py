@@ -407,7 +407,7 @@ warnings.filterwarnings('ignore')
 
 # Configuração da página
 st.set_page_config(
-    page_title="ARGOS - Infrações GESSUPER",
+    page_title="Operação ARGOS",
     page_icon="🎯",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -5352,7 +5352,7 @@ def render_operacao_fiscal(engine, grupo: str):
     # Header da operação
     st.markdown("""
     <div style='text-align: center; margin: 0.5rem 0;'>
-        <span style='color: #1565C0; font-size: 1.3rem; font-weight: 600;'>🎯 Operação ARGOS</span>
+        <span style='color: #1565C0; font-size: 1.3rem; font-weight: 600;'>🎯 Operação ARGOS - OF Nº 2600000008089</span>
     </div>
     """, unsafe_allow_html=True)
 
@@ -5714,7 +5714,8 @@ def render_operacao_fiscal(engine, grupo: str):
                         value=REDE_PATH,
                         disabled=True,
                         label_visibility="collapsed",
-                        help="Selecione e copie com Ctrl+C"
+                        help="Selecione e copie com Ctrl+C",
+                        key=f"rede_path_copy_{grupo}"
                     )
                     st.caption("💡 Clique no campo acima, selecione tudo (Ctrl+A) e copie (Ctrl+C)")
                     
@@ -5895,21 +5896,56 @@ def render_operacao_fiscal(engine, grupo: str):
                             st.session_state[cache_key_stats] = valores.describe()
                         else:
                             st.session_state[cache_key_stats] = None
-                    
+
                     stats = st.session_state.get(cache_key_stats)
-                    
+
                     if stats is not None and not pd.isna(stats.get('mean', float('nan'))):
+                        media = stats['mean']
+
                         col1, col2, col3, col4 = st.columns(4)
-                        col1.metric("Média", format_currency_br(stats['mean']))
-                        col2.metric("Mediana", format_currency_br(stats['50%']))
+                        col1.metric("Média", format_currency_br(media))
+
+                        # Mediana com comparativo vs média
+                        diff_mediana_pct = ((stats['50%'] / media) - 1) * 100 if media > 0 else 0
+                        col2.metric(
+                            "Mediana",
+                            format_currency_br(stats['50%']),
+                            delta=f"{diff_mediana_pct:+.1f}% vs. média",
+                            delta_color="off"
+                        )
+
                         col3.metric("Mínimo", format_currency_br(stats['min']))
-                        col4.metric("Máximo", format_currency_br(stats['max']))
-                        
+
+                        # Máximo com comparativo vs média
+                        diff_max_x = stats['max'] / media if media > 0 else 0
+                        col4.metric(
+                            "Máximo",
+                            format_currency_br(stats['max']),
+                            delta=f"{diff_max_x:.1f}x a média",
+                            delta_color="off"
+                        )
+
                         col1, col2, col3, col4 = st.columns(4)
                         col1.metric("Total", format_currency_br(stats['mean'] * stats['count']))
                         col2.metric("Qtd. Itens", format_number_br(int(stats['count'])))
-                        col3.metric("Desvio Padrão", format_currency_br(stats['std']))
-                        col4.metric("75º Percentil", format_currency_br(stats['75%']))
+
+                        # Desvio Padrão com comparativo vs média (coeficiente de variação)
+                        cv_pct = (stats['std'] / media) * 100 if media > 0 else 0
+                        col3.metric(
+                            "Desvio Padrão",
+                            format_currency_br(stats['std']),
+                            delta=f"CV: {cv_pct:.1f}%",
+                            delta_color="off"
+                        )
+
+                        # 75º Percentil com comparativo vs média
+                        diff_p75_pct = ((stats['75%'] / media) - 1) * 100 if media > 0 else 0
+                        col4.metric(
+                            "75º Percentil",
+                            format_currency_br(stats['75%']),
+                            delta=f"{diff_p75_pct:+.1f}% vs. média",
+                            delta_color="off"
+                        )
                     else:
                         st.warning("⚠️ Não há dados numéricos válidos para calcular estatísticas.")
                 
@@ -6003,7 +6039,7 @@ def render_operacao_fiscal(engine, grupo: str):
                 # ----- NCM/CFOP (EM TEXTO) -----
                 with st.expander("🏷️ Top 10 NCM / CFOP", expanded=False):
                     col1, col2 = st.columns(2)
-                    
+
                     with col1:
                         st.markdown("##### 🏷️ Top 10 NCMs")
                         if 'ncm' in df_analise.columns:
@@ -6015,27 +6051,26 @@ def render_operacao_fiscal(engine, grupo: str):
                                 df_ncm = df_ncm.nlargest(10, 'Valor')
                                 df_ncm['Valor_fmt'] = df_ncm['Valor'].apply(format_currency_br)
                                 df_ncm['Qtd_fmt'] = df_ncm['Qtd'].apply(lambda x: f"{x:,}".replace(',', '.'))
-                                
+
                                 # Busca descrições dos NCMs
                                 ncm_desc = get_ncm_descricoes(engine, df_ncm['NCM'].tolist())
                                 df_ncm['Descricao'] = df_ncm['NCM'].astype(str).map(ncm_desc).fillna('')
-                                
+
                                 st.session_state[f"{agg_key}_ncm"] = df_ncm
-                            
+
                             df_ncm = st.session_state[f"{agg_key}_ncm"]
-                            for i, row in df_ncm.iterrows():
+                            total_ncm = df_ncm['Valor'].sum()
+                            for idx, (i, row) in enumerate(df_ncm.iterrows()):
                                 ncm_code = row['NCM']
                                 descricao = row.get('Descricao', '')
+                                pct = (row['Valor'] / total_ncm) * 100 if total_ncm > 0 else 0
                                 # Trunca descrição se muito longa
-                                if descricao and len(descricao) > 80:
-                                    descricao = descricao[:80] + "..."
-                                
-                                if descricao:
-                                    st.markdown(f"**{ncm_code}** — {row['Valor_fmt']} ({row['Qtd_fmt']} itens)")
-                                    st.caption(f"↳ {descricao}")
-                                else:
-                                    st.markdown(f"**{ncm_code}** — {row['Valor_fmt']} ({row['Qtd_fmt']} itens)")
-                    
+                                if descricao and len(descricao) > 60:
+                                    descricao = descricao[:60] + "..."
+
+                                st.markdown(f"**{idx+1}. {ncm_code}**" + (f" - {descricao}" if descricao else ""))
+                                st.caption(f"   💰 {row['Valor_fmt']} | 📦 {row['Qtd_fmt']} itens | {pct:.1f}%")
+
                     with col2:
                         st.markdown("##### 📋 Top 10 CFOPs")
                         if 'cfop' in df_analise.columns:
@@ -6047,26 +6082,25 @@ def render_operacao_fiscal(engine, grupo: str):
                                 df_cfop = df_cfop.nlargest(10, 'Valor')
                                 df_cfop['Valor_fmt'] = df_cfop['Valor'].apply(format_currency_br)
                                 df_cfop['Qtd_fmt'] = df_cfop['Qtd'].apply(lambda x: f"{x:,}".replace(',', '.'))
-                                
+
                                 # Busca descrições dos CFOPs
                                 cfop_desc = get_cfop_descricoes(engine, df_cfop['CFOP'].tolist())
                                 df_cfop['Descricao'] = df_cfop['CFOP'].astype(str).map(cfop_desc).fillna('')
-                                
+
                                 st.session_state[f"{agg_key}_cfop"] = df_cfop
-                            
+
                             df_cfop = st.session_state[f"{agg_key}_cfop"]
-                            for i, row in df_cfop.iterrows():
+                            total_cfop = df_cfop['Valor'].sum()
+                            for idx, (i, row) in enumerate(df_cfop.iterrows()):
                                 cfop_code = row['CFOP']
                                 descricao = row.get('Descricao', '')
+                                pct = (row['Valor'] / total_cfop) * 100 if total_cfop > 0 else 0
                                 # Trunca descrição se muito longa
-                                if descricao and len(descricao) > 60:
-                                    descricao = descricao[:60] + "..."
-                                
-                                if descricao:
-                                    st.markdown(f"**{cfop_code}** — {row['Valor_fmt']} ({row['Qtd_fmt']} itens)")
-                                    st.caption(f"↳ {descricao}")
-                                else:
-                                    st.markdown(f"**{cfop_code}** — {row['Valor_fmt']} ({row['Qtd_fmt']} itens)")
+                                if descricao and len(descricao) > 50:
+                                    descricao = descricao[:50] + "..."
+
+                                st.markdown(f"**{idx+1}. {cfop_code}**" + (f" - {descricao}" if descricao else ""))
+                                st.caption(f"   💰 {row['Valor_fmt']} | 📦 {row['Qtd_fmt']} itens | {pct:.1f}%")
                 
                 # ----- PRODUTOS (HEATMAP TOP 10) -----
                 with st.expander("📦 Top 10 Produtos", expanded=False):
@@ -6092,11 +6126,12 @@ def render_operacao_fiscal(engine, grupo: str):
                         )
                         fig.update_layout(
                             title="🔥 Heatmap - Top 10 Produtos por Valor",
-                            height=150,
-                            xaxis_tickangle=-45
+                            height=120,
+                            xaxis_tickangle=-45,
+                            margin=dict(t=30, b=10, l=10, r=10)
                         )
                         st.plotly_chart(fig, use_container_width=True, key="heatmap_produtos")
-                        
+
                         # Tabela detalhada
                         st.markdown("##### 📋 Detalhamento")
                         for i, row in df_prod.iterrows():
