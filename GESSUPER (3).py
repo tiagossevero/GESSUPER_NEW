@@ -5900,64 +5900,17 @@ def render_operacao_fiscal(engine, grupo: str):
                     stats = st.session_state.get(cache_key_stats)
 
                     if stats is not None and not pd.isna(stats.get('mean', float('nan'))):
-                        media = stats['mean']
-
                         col1, col2, col3, col4 = st.columns(4)
-                        col1.metric("Média", format_currency_br(media))
-
-                        # Mediana com comparativo vs média (verde se acima, vermelho se abaixo)
-                        if media > 0 and stats['50%'] > 0:
-                            diff_mediana_pct = ((stats['50%'] / media) - 1) * 100
-                            col2.metric(
-                                "Mediana",
-                                format_currency_br(stats['50%']),
-                                delta=f"{diff_mediana_pct:+.1f}% vs. média",
-                                delta_color="normal"
-                            )
-                        else:
-                            col2.metric("Mediana", format_currency_br(stats['50%']))
-
+                        col1.metric("Média", format_currency_br(stats['mean']))
+                        col2.metric("Mediana", format_currency_br(stats['50%']))
                         col3.metric("Mínimo", format_currency_br(stats['min']))
-
-                        # Máximo com comparativo vs média
-                        if media > 0:
-                            diff_max_x = stats['max'] / media
-                            col4.metric(
-                                "Máximo",
-                                format_currency_br(stats['max']),
-                                delta=f"{diff_max_x:.1f}x a média",
-                                delta_color="off"
-                            )
-                        else:
-                            col4.metric("Máximo", format_currency_br(stats['max']))
+                        col4.metric("Máximo", format_currency_br(stats['max']))
 
                         col1, col2, col3, col4 = st.columns(4)
                         col1.metric("Total", format_currency_br(stats['mean'] * stats['count']))
                         col2.metric("Qtd. Itens", format_number_br(int(stats['count'])))
-
-                        # Desvio Padrão com coeficiente de variação
-                        if media > 0:
-                            cv_pct = (stats['std'] / media) * 100
-                            col3.metric(
-                                "Desvio Padrão",
-                                format_currency_br(stats['std']),
-                                delta=f"CV: {cv_pct:.1f}%",
-                                delta_color="off"
-                            )
-                        else:
-                            col3.metric("Desvio Padrão", format_currency_br(stats['std']))
-
-                        # 75º Percentil com comparativo vs média (verde se acima, vermelho se abaixo)
-                        if media > 0 and stats['75%'] > 0:
-                            diff_p75_pct = ((stats['75%'] / media) - 1) * 100
-                            col4.metric(
-                                "75º Percentil",
-                                format_currency_br(stats['75%']),
-                                delta=f"{diff_p75_pct:+.1f}% vs. média",
-                                delta_color="normal"
-                            )
-                        else:
-                            col4.metric("75º Percentil", format_currency_br(stats['75%']))
+                        col3.metric("Desvio Padrão", format_currency_br(stats['std']))
+                        col4.metric("75º Percentil", format_currency_br(stats['75%']))
                     else:
                         st.warning("⚠️ Não há dados numéricos válidos para calcular estatísticas.")
                 
@@ -6127,7 +6080,7 @@ def render_operacao_fiscal(engine, grupo: str):
 
                         df_prod = st.session_state[f"{agg_key}_prod"]
 
-                        # Layout em 2 colunas: Detalhamento | Heatmap
+                        # Layout em 2 colunas: Detalhamento | Heatmaps
                         col_detalhe, col_heatmap = st.columns([1, 1])
 
                         with col_detalhe:
@@ -6138,26 +6091,39 @@ def render_operacao_fiscal(engine, grupo: str):
                                 st.caption(f"   💰 {format_currency_br(row['Valor'])} | 📦 {row['Qtd']:,} itens | {pct:.1f}%")
 
                         with col_heatmap:
+                            # Heatmap por Valor (quadrado)
                             st.markdown("##### 🔥 Heatmap por Valor")
-                            # Heatmap vertical com Plotly
-                            fig = px.bar(
-                                df_prod,
-                                y=df_prod['Produto'].apply(lambda x: x[:25] + '...' if len(str(x)) > 25 else x),
-                                x='Valor',
-                                orientation='h',
-                                color='Valor',
-                                color_continuous_scale='Blues'
+                            fig_valor = px.imshow(
+                                df_prod[['Valor']].T,
+                                labels=dict(x="Produto", y="", color="Valor (R$)"),
+                                x=df_prod['Produto'].apply(lambda x: x[:20] + '...' if len(str(x)) > 20 else x),
+                                y=['Valor'],
+                                color_continuous_scale='Blues',
+                                aspect='auto'
                             )
-                            fig.update_layout(
-                                height=350,
+                            fig_valor.update_layout(
+                                height=100,
                                 margin=dict(t=10, b=10, l=10, r=10),
-                                showlegend=False,
-                                xaxis_title="",
-                                yaxis_title="",
-                                coloraxis_showscale=False
+                                xaxis_tickangle=-45
                             )
-                            fig.update_yaxes(autorange="reversed")
-                            st.plotly_chart(fig, use_container_width=True, key="heatmap_produtos")
+                            st.plotly_chart(fig_valor, use_container_width=True, key="heatmap_produtos_valor")
+
+                            # Heatmap por Quantidade (quadrado)
+                            st.markdown("##### 📦 Heatmap por Quantidade")
+                            fig_qtd = px.imshow(
+                                df_prod[['Qtd']].T,
+                                labels=dict(x="Produto", y="", color="Quantidade"),
+                                x=df_prod['Produto'].apply(lambda x: x[:20] + '...' if len(str(x)) > 20 else x),
+                                y=['Qtd'],
+                                color_continuous_scale='Greens',
+                                aspect='auto'
+                            )
+                            fig_qtd.update_layout(
+                                height=100,
+                                margin=dict(t=10, b=10, l=10, r=10),
+                                xaxis_tickangle=-45
+                            )
+                            st.plotly_chart(fig_qtd, use_container_width=True, key="heatmap_produtos_qtd")
                 
                 # ----- DADOS -----
                 with st.expander("📋 Visualizar Dados", expanded=False):
