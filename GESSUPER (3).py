@@ -6001,99 +6001,95 @@ def render_operacao_fiscal(engine, grupo: str):
                     else:
                         st.info("Coluna 'periodo' não disponível para visualização temporal.")
                 
-                # ----- NCM/CFOP (TABELAS COM PROGRESS) -----
-                with st.expander("🏷️ Top 10 NCM / CFOP", expanded=False):
-                    col1, col2 = st.columns(2)
+                # ----- NCM (TOP 10 - TABELA COM PROGRESS) -----
+                with st.expander("🏷️ Top 10 NCM", expanded=False):
+                    if 'ncm' in df_analise.columns:
+                        # Força recriação do cache se estrutura mudou
+                        cache_key_ncm = f"{agg_key}_ncm_v2"
+                        if cache_key_ncm not in st.session_state:
+                            df_temp = df_analise[['ncm', col_infracao]].copy()
+                            df_temp['valor'] = pd.to_numeric(df_temp[col_infracao], errors='coerce').fillna(0)
+                            df_ncm = df_temp.groupby('ncm')['valor'].agg(['sum', 'count']).reset_index()
+                            df_ncm.columns = ['NCM', 'Valor', 'Itens']
+                            df_ncm = df_ncm.nlargest(10, 'Valor')
 
-                    with col1:
-                        st.markdown("##### 🏷️ Top 10 NCMs")
-                        if 'ncm' in df_analise.columns:
-                            # Força recriação do cache se estrutura mudou
-                            cache_key_ncm = f"{agg_key}_ncm_v2"
-                            if cache_key_ncm not in st.session_state:
-                                df_temp = df_analise[['ncm', col_infracao]].copy()
-                                df_temp['valor'] = pd.to_numeric(df_temp[col_infracao], errors='coerce').fillna(0)
-                                df_ncm = df_temp.groupby('ncm')['valor'].agg(['sum', 'count']).reset_index()
-                                df_ncm.columns = ['NCM', 'Valor', 'Itens']
-                                df_ncm = df_ncm.nlargest(10, 'Valor')
+                            # Busca descrições dos NCMs
+                            ncm_desc = get_ncm_descricoes(engine, df_ncm['NCM'].tolist())
+                            df_ncm['Descrição'] = df_ncm['NCM'].astype(str).map(ncm_desc).fillna('')
 
-                                # Busca descrições dos NCMs
-                                ncm_desc = get_ncm_descricoes(engine, df_ncm['NCM'].tolist())
-                                df_ncm['Descrição'] = df_ncm['NCM'].astype(str).map(ncm_desc).fillna('')
+                            st.session_state[cache_key_ncm] = df_ncm
 
-                                st.session_state[cache_key_ncm] = df_ncm
+                        df_ncm = st.session_state[cache_key_ncm].copy()
+                        max_valor = float(df_ncm['Valor'].max()) if len(df_ncm) > 0 else 1.0
+                        max_itens = int(df_ncm['Itens'].max()) if len(df_ncm) > 0 else 1
 
-                            df_ncm = st.session_state[cache_key_ncm].copy()
-                            max_valor = float(df_ncm['Valor'].max()) if len(df_ncm) > 0 else 1.0
-                            max_itens = int(df_ncm['Itens'].max()) if len(df_ncm) > 0 else 1
+                        # Tabela com progress bars
+                        st.dataframe(
+                            df_ncm[['NCM', 'Descrição', 'Valor', 'Itens']],
+                            column_config={
+                                "NCM": st.column_config.TextColumn("NCM", width="small"),
+                                "Descrição": st.column_config.TextColumn("Descrição", width="large"),
+                                "Valor": st.column_config.ProgressColumn(
+                                    "Valor Total",
+                                    format="R$ %.2f",
+                                    min_value=0,
+                                    max_value=max_valor,
+                                ),
+                                "Itens": st.column_config.ProgressColumn(
+                                    "Itens",
+                                    format="%d",
+                                    min_value=0,
+                                    max_value=max_itens,
+                                ),
+                            },
+                            hide_index=True,
+                            use_container_width=True
+                        )
 
-                            # Tabela com progress bars
-                            st.dataframe(
-                                df_ncm[['NCM', 'Descrição', 'Valor', 'Itens']],
-                                column_config={
-                                    "NCM": st.column_config.TextColumn("NCM", width="small"),
-                                    "Descrição": st.column_config.TextColumn("Descrição", width="large"),
-                                    "Valor": st.column_config.ProgressColumn(
-                                        "Valor Total",
-                                        format="R$ %.2f",
-                                        min_value=0,
-                                        max_value=max_valor,
-                                    ),
-                                    "Itens": st.column_config.ProgressColumn(
-                                        "Itens",
-                                        format="%d",
-                                        min_value=0,
-                                        max_value=max_itens,
-                                    ),
-                                },
-                                hide_index=True,
-                                use_container_width=True
-                            )
+                # ----- CFOP (TOP 10 - TABELA COM PROGRESS) -----
+                with st.expander("📋 Top 10 CFOP", expanded=False):
+                    if 'cfop' in df_analise.columns:
+                        # Força recriação do cache se estrutura mudou
+                        cache_key_cfop = f"{agg_key}_cfop_v2"
+                        if cache_key_cfop not in st.session_state:
+                            df_temp = df_analise[['cfop', col_infracao]].copy()
+                            df_temp['valor'] = pd.to_numeric(df_temp[col_infracao], errors='coerce').fillna(0)
+                            df_cfop = df_temp.groupby('cfop')['valor'].agg(['sum', 'count']).reset_index()
+                            df_cfop.columns = ['CFOP', 'Valor', 'Itens']
+                            df_cfop = df_cfop.nlargest(10, 'Valor')
 
-                    with col2:
-                        st.markdown("##### 📋 Top 10 CFOPs")
-                        if 'cfop' in df_analise.columns:
-                            # Força recriação do cache se estrutura mudou
-                            cache_key_cfop = f"{agg_key}_cfop_v2"
-                            if cache_key_cfop not in st.session_state:
-                                df_temp = df_analise[['cfop', col_infracao]].copy()
-                                df_temp['valor'] = pd.to_numeric(df_temp[col_infracao], errors='coerce').fillna(0)
-                                df_cfop = df_temp.groupby('cfop')['valor'].agg(['sum', 'count']).reset_index()
-                                df_cfop.columns = ['CFOP', 'Valor', 'Itens']
-                                df_cfop = df_cfop.nlargest(10, 'Valor')
+                            # Busca descrições dos CFOPs
+                            cfop_desc = get_cfop_descricoes(engine, df_cfop['CFOP'].tolist())
+                            df_cfop['Descrição'] = df_cfop['CFOP'].astype(str).map(cfop_desc).fillna('')
 
-                                # Busca descrições dos CFOPs
-                                cfop_desc = get_cfop_descricoes(engine, df_cfop['CFOP'].tolist())
-                                df_cfop['Descrição'] = df_cfop['CFOP'].astype(str).map(cfop_desc).fillna('')
+                            st.session_state[cache_key_cfop] = df_cfop
 
-                                st.session_state[cache_key_cfop] = df_cfop
+                        df_cfop = st.session_state[cache_key_cfop].copy()
+                        max_valor = float(df_cfop['Valor'].max()) if len(df_cfop) > 0 else 1.0
+                        max_itens = int(df_cfop['Itens'].max()) if len(df_cfop) > 0 else 1
 
-                            df_cfop = st.session_state[cache_key_cfop].copy()
-                            max_valor = float(df_cfop['Valor'].max()) if len(df_cfop) > 0 else 1.0
-                            max_itens = int(df_cfop['Itens'].max()) if len(df_cfop) > 0 else 1
-
-                            # Tabela com progress bars
-                            st.dataframe(
-                                df_cfop[['CFOP', 'Descrição', 'Valor', 'Itens']],
-                                column_config={
-                                    "CFOP": st.column_config.TextColumn("CFOP", width="small"),
-                                    "Descrição": st.column_config.TextColumn("Descrição", width="large"),
-                                    "Valor": st.column_config.ProgressColumn(
-                                        "Valor Total",
-                                        format="R$ %.2f",
-                                        min_value=0,
-                                        max_value=max_valor,
-                                    ),
-                                    "Itens": st.column_config.ProgressColumn(
-                                        "Itens",
-                                        format="%d",
-                                        min_value=0,
-                                        max_value=max_itens,
-                                    ),
-                                },
-                                hide_index=True,
-                                use_container_width=True
-                            )
+                        # Tabela com progress bars
+                        st.dataframe(
+                            df_cfop[['CFOP', 'Descrição', 'Valor', 'Itens']],
+                            column_config={
+                                "CFOP": st.column_config.TextColumn("CFOP", width="small"),
+                                "Descrição": st.column_config.TextColumn("Descrição", width="large"),
+                                "Valor": st.column_config.ProgressColumn(
+                                    "Valor Total",
+                                    format="R$ %.2f",
+                                    min_value=0,
+                                    max_value=max_valor,
+                                ),
+                                "Itens": st.column_config.ProgressColumn(
+                                    "Itens",
+                                    format="%d",
+                                    min_value=0,
+                                    max_value=max_itens,
+                                ),
+                            },
+                            hide_index=True,
+                            use_container_width=True
+                        )
                 
                 # ----- PRODUTOS (TOP 10 - TABELA COM PROGRESS) -----
                 with st.expander("📦 Top 10 Produtos", expanded=False):
