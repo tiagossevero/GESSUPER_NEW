@@ -5352,7 +5352,7 @@ def render_operacao_fiscal(engine, grupo: str):
     # Header da operação
     st.markdown("""
     <div style='text-align: center; margin: 0.5rem 0;'>
-        <span style='color: #1565C0; font-size: 1.3rem; font-weight: 600;'>🎯 Operação ARGOS - OF Nº 2600000008089</span>
+        <span style='color: #1565C0; font-size: 1.3rem; font-weight: 600;'>OF Nº 2600000008089 — OPERAÇÃO ARGOS - NIAT (2026)</span>
     </div>
     """, unsafe_allow_html=True)
 
@@ -6001,7 +6001,7 @@ def render_operacao_fiscal(engine, grupo: str):
                     else:
                         st.info("Coluna 'periodo' não disponível para visualização temporal.")
                 
-                # ----- NCM/CFOP (EM TEXTO) -----
+                # ----- NCM/CFOP (TABELAS COM PROGRESS) -----
                 with st.expander("🏷️ Top 10 NCM / CFOP", expanded=False):
                     col1, col2 = st.columns(2)
 
@@ -6012,29 +6012,41 @@ def render_operacao_fiscal(engine, grupo: str):
                                 df_temp = df_analise[['ncm', col_infracao]].copy()
                                 df_temp['valor'] = pd.to_numeric(df_temp[col_infracao], errors='coerce').fillna(0)
                                 df_ncm = df_temp.groupby('ncm')['valor'].agg(['sum', 'count']).reset_index()
-                                df_ncm.columns = ['NCM', 'Valor', 'Qtd']
+                                df_ncm.columns = ['NCM', 'Valor', 'Itens']
                                 df_ncm = df_ncm.nlargest(10, 'Valor')
-                                df_ncm['Valor_fmt'] = df_ncm['Valor'].apply(format_currency_br)
-                                df_ncm['Qtd_fmt'] = df_ncm['Qtd'].apply(lambda x: f"{x:,}".replace(',', '.'))
 
                                 # Busca descrições dos NCMs
                                 ncm_desc = get_ncm_descricoes(engine, df_ncm['NCM'].tolist())
-                                df_ncm['Descricao'] = df_ncm['NCM'].astype(str).map(ncm_desc).fillna('')
+                                df_ncm['Descrição'] = df_ncm['NCM'].astype(str).map(ncm_desc).fillna('')
 
                                 st.session_state[f"{agg_key}_ncm"] = df_ncm
 
-                            df_ncm = st.session_state[f"{agg_key}_ncm"]
-                            total_ncm = df_ncm['Valor'].sum()
-                            for idx, (i, row) in enumerate(df_ncm.iterrows()):
-                                ncm_code = row['NCM']
-                                descricao = row.get('Descricao', '')
-                                pct = (row['Valor'] / total_ncm) * 100 if total_ncm > 0 else 0
-                                # Trunca descrição se muito longa
-                                if descricao and len(descricao) > 60:
-                                    descricao = descricao[:60] + "..."
+                            df_ncm = st.session_state[f"{agg_key}_ncm"].copy()
+                            max_valor = df_ncm['Valor'].max() if len(df_ncm) > 0 else 1
+                            max_itens = df_ncm['Itens'].max() if len(df_ncm) > 0 else 1
 
-                                st.markdown(f"**{idx+1}. {ncm_code}**" + (f" - {descricao}" if descricao else ""))
-                                st.caption(f"   💰 {row['Valor_fmt']} | 📦 {row['Qtd_fmt']} itens | {pct:.1f}%")
+                            # Tabela com progress bars
+                            st.dataframe(
+                                df_ncm[['NCM', 'Descrição', 'Valor', 'Itens']],
+                                column_config={
+                                    "NCM": st.column_config.TextColumn("NCM", width="small"),
+                                    "Descrição": st.column_config.TextColumn("Descrição", width="large"),
+                                    "Valor": st.column_config.ProgressColumn(
+                                        "Valor Total",
+                                        format="R$ %.2f",
+                                        min_value=0,
+                                        max_value=max_valor,
+                                    ),
+                                    "Itens": st.column_config.ProgressColumn(
+                                        "Itens",
+                                        format="%d",
+                                        min_value=0,
+                                        max_value=max_itens,
+                                    ),
+                                },
+                                hide_index=True,
+                                use_container_width=True
+                            )
 
                     with col2:
                         st.markdown("##### 📋 Top 10 CFOPs")
@@ -6043,87 +6055,78 @@ def render_operacao_fiscal(engine, grupo: str):
                                 df_temp = df_analise[['cfop', col_infracao]].copy()
                                 df_temp['valor'] = pd.to_numeric(df_temp[col_infracao], errors='coerce').fillna(0)
                                 df_cfop = df_temp.groupby('cfop')['valor'].agg(['sum', 'count']).reset_index()
-                                df_cfop.columns = ['CFOP', 'Valor', 'Qtd']
+                                df_cfop.columns = ['CFOP', 'Valor', 'Itens']
                                 df_cfop = df_cfop.nlargest(10, 'Valor')
-                                df_cfop['Valor_fmt'] = df_cfop['Valor'].apply(format_currency_br)
-                                df_cfop['Qtd_fmt'] = df_cfop['Qtd'].apply(lambda x: f"{x:,}".replace(',', '.'))
 
                                 # Busca descrições dos CFOPs
                                 cfop_desc = get_cfop_descricoes(engine, df_cfop['CFOP'].tolist())
-                                df_cfop['Descricao'] = df_cfop['CFOP'].astype(str).map(cfop_desc).fillna('')
+                                df_cfop['Descrição'] = df_cfop['CFOP'].astype(str).map(cfop_desc).fillna('')
 
                                 st.session_state[f"{agg_key}_cfop"] = df_cfop
 
-                            df_cfop = st.session_state[f"{agg_key}_cfop"]
-                            total_cfop = df_cfop['Valor'].sum()
-                            for idx, (i, row) in enumerate(df_cfop.iterrows()):
-                                cfop_code = row['CFOP']
-                                descricao = row.get('Descricao', '')
-                                pct = (row['Valor'] / total_cfop) * 100 if total_cfop > 0 else 0
-                                # Trunca descrição se muito longa
-                                if descricao and len(descricao) > 50:
-                                    descricao = descricao[:50] + "..."
+                            df_cfop = st.session_state[f"{agg_key}_cfop"].copy()
+                            max_valor = df_cfop['Valor'].max() if len(df_cfop) > 0 else 1
+                            max_itens = df_cfop['Itens'].max() if len(df_cfop) > 0 else 1
 
-                                st.markdown(f"**{idx+1}. {cfop_code}**" + (f" - {descricao}" if descricao else ""))
-                                st.caption(f"   💰 {row['Valor_fmt']} | 📦 {row['Qtd_fmt']} itens | {pct:.1f}%")
+                            # Tabela com progress bars
+                            st.dataframe(
+                                df_cfop[['CFOP', 'Descrição', 'Valor', 'Itens']],
+                                column_config={
+                                    "CFOP": st.column_config.TextColumn("CFOP", width="small"),
+                                    "Descrição": st.column_config.TextColumn("Descrição", width="large"),
+                                    "Valor": st.column_config.ProgressColumn(
+                                        "Valor Total",
+                                        format="R$ %.2f",
+                                        min_value=0,
+                                        max_value=max_valor,
+                                    ),
+                                    "Itens": st.column_config.ProgressColumn(
+                                        "Itens",
+                                        format="%d",
+                                        min_value=0,
+                                        max_value=max_itens,
+                                    ),
+                                },
+                                hide_index=True,
+                                use_container_width=True
+                            )
                 
-                # ----- PRODUTOS (TOP 10) -----
+                # ----- PRODUTOS (TOP 10 - TABELA COM PROGRESS) -----
                 with st.expander("📦 Top 10 Produtos", expanded=False):
                     if 'descricao' in df_analise.columns:
                         if f"{agg_key}_prod" not in st.session_state:
                             df_temp = df_analise[['descricao', col_infracao]].copy()
                             df_temp['valor'] = pd.to_numeric(df_temp[col_infracao], errors='coerce').fillna(0)
                             df_prod = df_temp.groupby('descricao')['valor'].agg(['sum', 'count']).reset_index()
-                            df_prod.columns = ['Produto', 'Valor', 'Qtd']
+                            df_prod.columns = ['Descrição', 'Valor', 'Itens']
                             df_prod = df_prod.nlargest(10, 'Valor').reset_index(drop=True)
                             st.session_state[f"{agg_key}_prod"] = df_prod
 
-                        df_prod = st.session_state[f"{agg_key}_prod"]
+                        df_prod = st.session_state[f"{agg_key}_prod"].copy()
+                        max_valor = df_prod['Valor'].max() if len(df_prod) > 0 else 1
+                        max_itens = df_prod['Itens'].max() if len(df_prod) > 0 else 1
 
-                        # Layout em 2 colunas: Detalhamento | Heatmaps
-                        col_detalhe, col_heatmap = st.columns([1, 1])
-
-                        with col_detalhe:
-                            st.markdown("##### 📋 Detalhamento")
-                            for i, row in df_prod.iterrows():
-                                pct = (row['Valor'] / df_prod['Valor'].sum()) * 100
-                                st.markdown(f"**{i+1}.** {row['Produto'][:45]}{'...' if len(str(row['Produto'])) > 45 else ''}")
-                                st.caption(f"   💰 {format_currency_br(row['Valor'])} | 📦 {row['Qtd']:,} itens | {pct:.1f}%")
-
-                        with col_heatmap:
-                            # Heatmap por Valor (quadrado)
-                            st.markdown("##### 🔥 Heatmap por Valor")
-                            fig_valor = px.imshow(
-                                df_prod[['Valor']].T,
-                                labels=dict(x="Produto", y="", color="Valor (R$)"),
-                                x=df_prod['Produto'].apply(lambda x: x[:20] + '...' if len(str(x)) > 20 else x),
-                                y=['Valor'],
-                                color_continuous_scale='Blues',
-                                aspect='auto'
-                            )
-                            fig_valor.update_layout(
-                                height=100,
-                                margin=dict(t=10, b=10, l=10, r=10),
-                                xaxis_tickangle=-45
-                            )
-                            st.plotly_chart(fig_valor, use_container_width=True, key="heatmap_produtos_valor")
-
-                            # Heatmap por Quantidade (quadrado)
-                            st.markdown("##### 📦 Heatmap por Quantidade")
-                            fig_qtd = px.imshow(
-                                df_prod[['Qtd']].T,
-                                labels=dict(x="Produto", y="", color="Quantidade"),
-                                x=df_prod['Produto'].apply(lambda x: x[:20] + '...' if len(str(x)) > 20 else x),
-                                y=['Qtd'],
-                                color_continuous_scale='Greens',
-                                aspect='auto'
-                            )
-                            fig_qtd.update_layout(
-                                height=100,
-                                margin=dict(t=10, b=10, l=10, r=10),
-                                xaxis_tickangle=-45
-                            )
-                            st.plotly_chart(fig_qtd, use_container_width=True, key="heatmap_produtos_qtd")
+                        # Tabela com progress bars
+                        st.dataframe(
+                            df_prod[['Descrição', 'Valor', 'Itens']],
+                            column_config={
+                                "Descrição": st.column_config.TextColumn("Descrição", width="large"),
+                                "Valor": st.column_config.ProgressColumn(
+                                    "Valor Total",
+                                    format="R$ %.2f",
+                                    min_value=0,
+                                    max_value=max_valor,
+                                ),
+                                "Itens": st.column_config.ProgressColumn(
+                                    "Itens",
+                                    format="%d",
+                                    min_value=0,
+                                    max_value=max_itens,
+                                ),
+                            },
+                            hide_index=True,
+                            use_container_width=True
+                        )
                 
                 # ----- DADOS -----
                 with st.expander("📋 Visualizar Dados", expanded=False):
