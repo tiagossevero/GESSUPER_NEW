@@ -450,8 +450,36 @@ st.markdown("""
         border-radius: 10px;
         border: 2px solid #e1e5f0;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        position: relative;
+        cursor: help;
     }
-    
+
+    .card-kpi::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        white-space: normal;
+        max-width: 280px;
+        text-align: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s, visibility 0.3s;
+        z-index: 1000;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .card-kpi:hover::after {
+        opacity: 1;
+        visibility: visible;
+    }
+
     .card-kpi-baixa { border-left: 5px solid #f44336 !important; }  /* Vermelho (baixa confiança) */
     .card-kpi-media { border-left: 5px solid #FF9800 !important; }
     .card-kpi-alta { border-left: 5px solid #4CAF50 !important; }   /* Verde (alta confiança) */
@@ -2486,15 +2514,20 @@ def render_analise_exploratoria(df: pd.DataFrame, nivel_str: str, _engine=None):
         col1, col2, col3, col4, col5 = st.columns(5)
         
         with col1:
-            st.metric("Mínimo", format_currency_br(df_temp['infracao_valor'].min()))
+            st.metric("Mínimo", format_currency_br(df_temp['infracao_valor'].min()),
+                      help="Menor valor de infração encontrado no período selecionado")
         with col2:
-            st.metric("Máximo", format_currency_br(df_temp['infracao_valor'].max()))
+            st.metric("Máximo", format_currency_br(df_temp['infracao_valor'].max()),
+                      help="Maior valor de infração encontrado no período selecionado")
         with col3:
-            st.metric("Média", format_currency_br(df_temp['infracao_valor'].mean()))
+            st.metric("Média", format_currency_br(df_temp['infracao_valor'].mean()),
+                      help="Valor médio das infrações (soma total / quantidade de itens)")
         with col4:
-            st.metric("Mediana", format_currency_br(df_temp['infracao_valor'].median()))
+            st.metric("Mediana", format_currency_br(df_temp['infracao_valor'].median()),
+                      help="Valor central das infrações - 50% dos valores estão acima e 50% abaixo")
         with col5:
-            st.metric("Desvio Padrão", format_currency_br(df_temp['infracao_valor'].std()))
+            st.metric("Desvio Padrão", format_currency_br(df_temp['infracao_valor'].std()),
+                      help="Medida de dispersão dos valores - quanto maior, mais variação nos valores")
 
 # =============================================================================
 # 8. COMPARATIVO ENTRE NÍVEIS
@@ -2665,28 +2698,28 @@ def render_comparativo_niveis(engine, identificador_digits: str, total_rows: int
         
         # KPIs lado a lado (valores EXCLUSIVOS)
         col1, col2, col3 = st.columns(3)
-        
+
         with col1:
             st.markdown(f"""
-            <div class="card-kpi card-kpi-alta">
+            <div class="card-kpi card-kpi-alta" data-tooltip="ALTA confiança: Consenso entre as 3 IAs na classificação da alíquota. Maior probabilidade de acerto.">
                 <h4>🟢 Nível ALTA ({pct_alta:.1f}%)</h4>
                 <h2>{format_currency_br(total_alta)}</h2>
                 <p>{format_number_br(qtd_alta)} itens</p>
             </div>
             """, unsafe_allow_html=True)
-        
+
         with col2:
             st.markdown(f"""
-            <div class="card-kpi card-kpi-media">
+            <div class="card-kpi card-kpi-media" data-tooltip="MÉDIA confiança: Concordância entre 2 das 3 IAs. Requer análise complementar.">
                 <h4>🟡 Nível MÉDIA ({pct_media:.1f}%)</h4>
                 <h2>{format_currency_br(total_media)}</h2>
                 <p>{format_number_br(qtd_media)} itens</p>
             </div>
             """, unsafe_allow_html=True)
-        
+
         with col3:
             st.markdown(f"""
-            <div class="card-kpi card-kpi-baixa">
+            <div class="card-kpi card-kpi-baixa" data-tooltip="BAIXA confiança: Apenas 1 IA classificou ou houve divergência total. Necessita revisão manual.">
                 <h4>🔴 Nível BAIXA ({pct_baixa:.1f}%)</h4>
                 <h2>{format_currency_br(total_baixa)}</h2>
                 <p>{format_number_br(qtd_baixa)} itens</p>
@@ -3593,60 +3626,68 @@ def render_ranking(engine, nivel: str = "ALTA"):
             # KPIs em cards
             st.markdown("##### 💰 Por Valor")
             col1, col2, col3, col4 = st.columns(4)
-            
+
             with col1:
                 st.metric(
                     "🟢 ALTA",
                     format_currency_br(stats_acur['valor_alta']),
-                    f"{stats_acur['pct_valor_alta']:.1f}%"
+                    f"{stats_acur['pct_valor_alta']:.1f}%",
+                    help="Valor das infrações com ALTA confiança - consenso entre as 3 IAs na classificação da alíquota"
                 )
             with col2:
                 st.metric(
                     "🟡 MÉDIA",
                     format_currency_br(stats_acur['valor_media']),
-                    f"{stats_acur['pct_valor_media']:.1f}%"
+                    f"{stats_acur['pct_valor_media']:.1f}%",
+                    help="Valor das infrações com MÉDIA confiança - concordância entre 2 das 3 IAs"
                 )
             with col3:
                 st.metric(
                     "🔴 BAIXA",
                     format_currency_br(stats_acur['valor_baixa']),
-                    f"{stats_acur['pct_valor_baixa']:.1f}%"
+                    f"{stats_acur['pct_valor_baixa']:.1f}%",
+                    help="Valor das infrações com BAIXA confiança - apenas 1 IA classificou ou houve divergência"
                 )
             with col4:
                 st.metric(
                     "💰 TOTAL",
                     format_currency_br(stats_acur['valor_total']),
                     "100%",
-                    delta_color="off"
+                    delta_color="off",
+                    help="Soma total de todas as infrações em todos os níveis de confiança"
                 )
-            
+
             st.markdown("##### 📋 Por Quantidade de Itens")
             col1, col2, col3, col4 = st.columns(4)
-            
+
             with col1:
                 st.metric(
                     "🟢 ALTA",
                     f"{stats_acur['qtd_alta']:,}".replace(",", "."),
-                    f"{stats_acur['pct_qtd_alta']:.1f}%"
+                    f"{stats_acur['pct_qtd_alta']:.1f}%",
+                    help="Quantidade de itens com ALTA confiança - consenso entre as 3 IAs"
                 )
             with col2:
                 st.metric(
                     "🟡 MÉDIA",
                     f"{stats_acur['qtd_media']:,}".replace(",", "."),
-                    f"{stats_acur['pct_qtd_media']:.1f}%"
+                    f"{stats_acur['pct_qtd_media']:.1f}%",
+                    help="Quantidade de itens com MÉDIA confiança - concordância entre 2 das 3 IAs"
                 )
             with col3:
                 st.metric(
                     "🔴 BAIXA",
                     f"{stats_acur['qtd_baixa']:,}".replace(",", "."),
-                    f"{stats_acur['pct_qtd_baixa']:.1f}%"
+                    f"{stats_acur['pct_qtd_baixa']:.1f}%",
+                    help="Quantidade de itens com BAIXA confiança - apenas 1 IA classificou ou houve divergência"
                 )
             with col4:
                 st.metric(
                     "📋 TOTAL",
                     f"{stats_acur['qtd_total']:,}".replace(",", "."),
                     "100%",
-                    delta_color="off"
+                    delta_color="off",
+                    help="Total de itens analisados em todos os níveis de confiança"
                 )
             
             # Gráficos
@@ -3822,15 +3863,19 @@ def render_ranking(engine, nivel: str = "ALTA"):
             media_pct_baixa = df_acuracia['pct_baixa'].mean()
             
             with col1:
-                st.metric("📊 Média % ALTA", f"{media_pct_alta:.1f}%")
+                st.metric("📊 Média % ALTA", f"{media_pct_alta:.1f}%",
+                          help="Percentual médio de infrações com ALTA confiança entre todas as empresas do ranking")
             with col2:
-                st.metric("📊 Média % MÉDIA", f"{media_pct_media:.1f}%")
+                st.metric("📊 Média % MÉDIA", f"{media_pct_media:.1f}%",
+                          help="Percentual médio de infrações com MÉDIA confiança entre todas as empresas do ranking")
             with col3:
-                st.metric("📊 Média % BAIXA", f"{media_pct_baixa:.1f}%")
+                st.metric("📊 Média % BAIXA", f"{media_pct_baixa:.1f}%",
+                          help="Percentual médio de infrações com BAIXA confiança entre todas as empresas do ranking")
             with col4:
                 empresas_majoritaria_alta = len(df_acuracia[df_acuracia['pct_alta'] > 50])
-                st.metric("🏆 Empresas >50% ALTA", f"{empresas_majoritaria_alta}")
-            
+                st.metric("🏆 Empresas >50% ALTA", f"{empresas_majoritaria_alta}",
+                          help="Quantidade de empresas onde mais da metade das infrações têm ALTA confiança")
+
             st.caption("💡 Empresas com maior % ALTA têm infrações mais confiáveis (consenso das 3 IAs).")
         else:
             st.info("Não foi possível carregar o ranking de acurácia.")
@@ -3842,15 +3887,20 @@ def render_ranking(engine, nivel: str = "ALTA"):
         desc = stats['descritivas']
         col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
-            st.metric("📊 Média", format_currency_br(desc['media']))
+            st.metric("📊 Média", format_currency_br(desc['media']),
+                      help="Valor médio de infração por empresa (soma total / número de empresas)")
         with col2:
-            st.metric("📊 Mediana", format_currency_br(desc['mediana']))
+            st.metric("📊 Mediana", format_currency_br(desc['mediana']),
+                      help="Valor central - 50% das empresas têm valor acima e 50% abaixo deste valor")
         with col3:
-            st.metric("📉 Mínimo", format_currency_br(desc['min']))
+            st.metric("📉 Mínimo", format_currency_br(desc['min']),
+                      help="Menor valor de infração entre todas as empresas do ranking")
         with col4:
-            st.metric("📈 Máximo", format_currency_br(desc['max']))
+            st.metric("📈 Máximo", format_currency_br(desc['max']),
+                      help="Maior valor de infração entre todas as empresas do ranking")
         with col5:
-            st.metric("📏 Desvio Padrão", format_currency_br(desc['std']))
+            st.metric("📏 Desvio Padrão", format_currency_br(desc['std']),
+                      help="Medida de dispersão - quanto maior, mais heterogêneos são os valores entre empresas")
         
         # Concentração (em relação ao TOTAL GERAL de todas empresas)
         total_geral = stats['total_geral']
@@ -4202,16 +4252,20 @@ def render_pesquisa_produtos(engine):
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            st.metric("📦 Registros", f"{len(df):,}")
+            st.metric("📦 Registros", f"{len(df):,}",
+                      help="Total de itens/registros encontrados para o termo pesquisado")
         with col2:
             empresas_unicas = df['cnpj_emitente'].nunique()
-            st.metric("🏢 Empresas", f"{empresas_unicas:,}")
+            st.metric("🏢 Empresas", f"{empresas_unicas:,}",
+                      help="Quantidade de empresas distintas que possuem o produto pesquisado")
         with col3:
             ncm_unicos = df['ncm'].nunique()
-            st.metric("🏷️ NCMs", f"{ncm_unicos:,}")
+            st.metric("🏷️ NCMs", f"{ncm_unicos:,}",
+                      help="Quantidade de códigos NCM distintos associados ao termo pesquisado")
         with col4:
             valor_total = df['valor_infracao'].sum()
-            st.metric("💰 Valor Infrações", format_currency_br(valor_total))
+            st.metric("💰 Valor Infrações", format_currency_br(valor_total),
+                      help="Soma total das infrações para todos os registros encontrados")
         
         # Tabs de análise
         tab_aliq, tab_ncm, tab_empresas, tab_dados = st.tabs([
@@ -4291,11 +4345,14 @@ def render_pesquisa_produtos(engine):
             
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("✅ Concordantes", f"{total - divergentes:,}")
+                st.metric("✅ Concordantes", f"{total - divergentes:,}",
+                          help="Itens onde a alíquota informada pelo emitente coincide com a sugerida pela IA")
             with col2:
-                st.metric("⚠️ Divergentes", f"{divergentes:,}")
+                st.metric("⚠️ Divergentes", f"{divergentes:,}",
+                          help="Itens onde a alíquota informada pelo emitente difere da sugerida pela IA")
             with col3:
-                st.metric("📊 % Divergência", f"{pct_divergente:.1f}%")
+                st.metric("📊 % Divergência", f"{pct_divergente:.1f}%",
+                          help="Percentual de itens com divergência entre alíquota do emitente e da IA")
         
         # ---------------------------------------------------------------------
         # TAB: NCMs
@@ -4684,26 +4741,30 @@ def render_ranking_tab(engine, grupo: str):
                 st.metric(
                     "🟢 ALTA",
                     format_currency_br(stats_acur['valor_alta']),
-                    f"{stats_acur['pct_valor_alta']:.1f}%"
+                    f"{stats_acur['pct_valor_alta']:.1f}%",
+                    help="Valor das infrações com ALTA confiança - consenso entre as 3 IAs na classificação da alíquota"
                 )
             with col2:
                 st.metric(
                     "🟡 MÉDIA",
                     format_currency_br(stats_acur['valor_media']),
-                    f"{stats_acur['pct_valor_media']:.1f}%"
+                    f"{stats_acur['pct_valor_media']:.1f}%",
+                    help="Valor das infrações com MÉDIA confiança - concordância entre 2 das 3 IAs"
                 )
             with col3:
                 st.metric(
                     "🔴 BAIXA",
                     format_currency_br(stats_acur['valor_baixa']),
-                    f"{stats_acur['pct_valor_baixa']:.1f}%"
+                    f"{stats_acur['pct_valor_baixa']:.1f}%",
+                    help="Valor das infrações com BAIXA confiança - apenas 1 IA classificou ou houve divergência"
                 )
             with col4:
                 st.metric(
                     "💰 TOTAL",
                     format_currency_br(stats_acur['valor_total']),
                     "100%",
-                    delta_color="off"
+                    delta_color="off",
+                    help="Soma total de todas as infrações em todos os níveis de confiança"
                 )
 
             st.markdown("##### 📋 Por Quantidade de Itens")
@@ -4713,26 +4774,30 @@ def render_ranking_tab(engine, grupo: str):
                 st.metric(
                     "🟢 ALTA",
                     f"{stats_acur['qtd_alta']:,}".replace(",", "."),
-                    f"{stats_acur['pct_qtd_alta']:.1f}%"
+                    f"{stats_acur['pct_qtd_alta']:.1f}%",
+                    help="Quantidade de itens com ALTA confiança - consenso entre as 3 IAs"
                 )
             with col2:
                 st.metric(
                     "🟡 MÉDIA",
                     f"{stats_acur['qtd_media']:,}".replace(",", "."),
-                    f"{stats_acur['pct_qtd_media']:.1f}%"
+                    f"{stats_acur['pct_qtd_media']:.1f}%",
+                    help="Quantidade de itens com MÉDIA confiança - concordância entre 2 das 3 IAs"
                 )
             with col3:
                 st.metric(
                     "🔴 BAIXA",
                     f"{stats_acur['qtd_baixa']:,}".replace(",", "."),
-                    f"{stats_acur['pct_qtd_baixa']:.1f}%"
+                    f"{stats_acur['pct_qtd_baixa']:.1f}%",
+                    help="Quantidade de itens com BAIXA confiança - apenas 1 IA classificou ou houve divergência"
                 )
             with col4:
                 st.metric(
                     "📋 TOTAL",
                     f"{stats_acur['qtd_total']:,}".replace(",", "."),
                     "100%",
-                    delta_color="off"
+                    delta_color="off",
+                    help="Total de itens analisados em todos os níveis de confiança"
                 )
 
             # Gráficos
@@ -4908,14 +4973,18 @@ def render_ranking_tab(engine, grupo: str):
             media_pct_baixa = df_acuracia_rank['pct_baixa'].mean()
 
             with col1:
-                st.metric("📊 Média % ALTA", f"{media_pct_alta:.1f}%")
+                st.metric("📊 Média % ALTA", f"{media_pct_alta:.1f}%",
+                          help="Percentual médio de infrações com ALTA confiança entre todas as empresas do ranking")
             with col2:
-                st.metric("📊 Média % MÉDIA", f"{media_pct_media:.1f}%")
+                st.metric("📊 Média % MÉDIA", f"{media_pct_media:.1f}%",
+                          help="Percentual médio de infrações com MÉDIA confiança entre todas as empresas do ranking")
             with col3:
-                st.metric("📊 Média % BAIXA", f"{media_pct_baixa:.1f}%")
+                st.metric("📊 Média % BAIXA", f"{media_pct_baixa:.1f}%",
+                          help="Percentual médio de infrações com BAIXA confiança entre todas as empresas do ranking")
             with col4:
                 empresas_majoritaria_alta = len(df_acuracia_rank[df_acuracia_rank['pct_alta'] > 50])
-                st.metric("🏆 Empresas >50% ALTA", f"{empresas_majoritaria_alta}")
+                st.metric("🏆 Empresas >50% ALTA", f"{empresas_majoritaria_alta}",
+                          help="Quantidade de empresas onde mais da metade das infrações têm ALTA confiança")
 
             st.caption("💡 Empresas com maior % ALTA têm infrações mais confiáveis (consenso das 3 IAs).")
         else:
@@ -4928,15 +4997,20 @@ def render_ranking_tab(engine, grupo: str):
         desc = stats['descritivas']
         col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
-            st.metric("📊 Média", format_currency_br(desc['media']))
+            st.metric("📊 Média", format_currency_br(desc['media']),
+                      help="Valor médio de infração por empresa (soma total / número de empresas)")
         with col2:
-            st.metric("📊 Mediana", format_currency_br(desc['mediana']))
+            st.metric("📊 Mediana", format_currency_br(desc['mediana']),
+                      help="Valor central - 50% das empresas têm valor acima e 50% abaixo deste valor")
         with col3:
-            st.metric("📉 Mínimo", format_currency_br(desc['min']))
+            st.metric("📉 Mínimo", format_currency_br(desc['min']),
+                      help="Menor valor de infração entre todas as empresas do ranking")
         with col4:
-            st.metric("📈 Máximo", format_currency_br(desc['max']))
+            st.metric("📈 Máximo", format_currency_br(desc['max']),
+                      help="Maior valor de infração entre todas as empresas do ranking")
         with col5:
-            st.metric("📏 Desvio Padrão", format_currency_br(desc['std']))
+            st.metric("📏 Desvio Padrão", format_currency_br(desc['std']),
+                      help="Medida de dispersão - quanto maior, mais heterogêneos são os valores entre empresas")
 
         # Concentração (em relação ao TOTAL GERAL de todas empresas)
         total_geral = stats['total_geral']
@@ -5125,11 +5199,14 @@ def render_ranking_tab(engine, grupo: str):
             st.markdown("---")
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("✅ OK", total_ok)
+                st.metric("✅ OK", total_ok,
+                          help="Testes que passaram com sucesso - conexão funcionando corretamente")
             with col2:
-                st.metric("⚠️ Avisos", total_aviso)
+                st.metric("⚠️ Avisos", total_aviso,
+                          help="Testes com avisos - funcionam mas podem apresentar problemas")
             with col3:
-                st.metric("❌ Erros", total_erro)
+                st.metric("❌ Erros", total_erro,
+                          help="Testes que falharam - verificar conexão com a rede")
 
             if total_erro > 0:
                 st.error("""
@@ -5582,25 +5659,28 @@ def render_operacao_fiscal(engine, grupo: str):
             
             # Cards com comparativos
             st.markdown("### 📊 Resumo da Empresa")
-            
+
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric(
                     f"{cfg['emoji']} Total Infração",
                     format_currency_br(total_nivel),
                     delta=f"{pct_valor_global:.2f}% do total" if pct_valor_global > 0 else None,
-                    delta_color="off"
+                    delta_color="off",
+                    help="Soma total das infrações desta empresa no nível de confiança selecionado"
                 )
             with col2:
                 st.metric(
                     "📦 Qtd. Itens",
                     format_number_br(len(df)),
                     delta=f"{pct_itens_global:.2f}% do total" if pct_itens_global > 0 else None,
-                    delta_color="off"
+                    delta_color="off",
+                    help="Quantidade de itens/registros de infração desta empresa"
                 )
             with col3:
                 periodos = df['periodo'].nunique() if 'periodo' in df.columns else 0
-                st.metric("📅 Períodos", periodos)
+                st.metric("📅 Períodos", periodos,
+                          help="Quantidade de períodos distintos com infrações")
             with col4:
                 if 'data_emissao' in df.columns:
                     df_datas = pd.to_datetime(df['data_emissao'], errors='coerce')
@@ -5610,8 +5690,9 @@ def render_operacao_fiscal(engine, grupo: str):
                         periodo_range = "N/A"
                 else:
                     periodo_range = "N/A"
-                st.metric("📆 Range", periodo_range)
-            
+                st.metric("📆 Range", periodo_range,
+                          help="Intervalo de tempo entre a primeira e última infração")
+
             # Segunda linha de métricas comparativas
             col1, col2, col3, col4 = st.columns(4)
             with col1:
@@ -5620,27 +5701,33 @@ def render_operacao_fiscal(engine, grupo: str):
                     "💵 Média/Item",
                     format_currency_br(media_empresa),
                     delta=f"{((media_empresa/global_stats['media_item'])-1)*100:.1f}% vs média geral" if global_stats and global_stats['media_item'] > 0 else None,
-                    delta_color="inverse"
+                    delta_color="inverse",
+                    help="Valor médio por item de infração desta empresa"
                 )
             with col2:
                 st.metric(
                     "📈 vs Média Empresas",
                     format_currency_br(diff_media),
                     delta="acima" if diff_media > 0 else "abaixo",
-                    delta_color="inverse" if diff_media > 0 else "normal"
+                    delta_color="inverse" if diff_media > 0 else "normal",
+                    help="Diferença entre o total desta empresa e a média geral de todas as empresas"
                 )
             with col3:
                 if global_stats and global_stats['total_empresas'] > 0:
                     # Estima posição no ranking (simplificado)
                     posicao_estimada = max(1, int(global_stats['total_empresas'] * (1 - pct_valor_global/100)))
-                    st.metric("🏆 Ranking Estimado", f"Top {min(posicao_estimada, 100)}")
+                    st.metric("🏆 Ranking Estimado", f"Top {min(posicao_estimada, 100)}",
+                              help="Posição estimada da empresa no ranking geral de infrações")
                 else:
-                    st.metric("🏆 Ranking", "N/A")
+                    st.metric("🏆 Ranking", "N/A",
+                              help="Posição no ranking não disponível")
             with col4:
                 if global_stats:
-                    st.metric("🏢 Total Empresas", f"{global_stats['total_empresas']:,}")
+                    st.metric("🏢 Total Empresas", f"{global_stats['total_empresas']:,}",
+                              help="Total de empresas com infrações neste nível de confiança")
                 else:
-                    st.metric("🏢 Total Empresas", "N/A")
+                    st.metric("🏢 Total Empresas", "N/A",
+                              help="Total de empresas não disponível")
             
             # Informações comparativas em texto
             if global_stats and pct_valor_global > 0:
