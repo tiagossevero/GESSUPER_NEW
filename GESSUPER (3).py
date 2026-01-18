@@ -6008,7 +6008,9 @@ def render_operacao_fiscal(engine, grupo: str):
                     with col1:
                         st.markdown("##### 🏷️ Top 10 NCMs")
                         if 'ncm' in df_analise.columns:
-                            if f"{agg_key}_ncm" not in st.session_state:
+                            # Força recriação do cache se estrutura mudou
+                            cache_key_ncm = f"{agg_key}_ncm_v2"
+                            if cache_key_ncm not in st.session_state:
                                 df_temp = df_analise[['ncm', col_infracao]].copy()
                                 df_temp['valor'] = pd.to_numeric(df_temp[col_infracao], errors='coerce').fillna(0)
                                 df_ncm = df_temp.groupby('ncm')['valor'].agg(['sum', 'count']).reset_index()
@@ -6019,9 +6021,9 @@ def render_operacao_fiscal(engine, grupo: str):
                                 ncm_desc = get_ncm_descricoes(engine, df_ncm['NCM'].tolist())
                                 df_ncm['Descrição'] = df_ncm['NCM'].astype(str).map(ncm_desc).fillna('')
 
-                                st.session_state[f"{agg_key}_ncm"] = df_ncm
+                                st.session_state[cache_key_ncm] = df_ncm
 
-                            df_ncm = st.session_state[f"{agg_key}_ncm"].copy()
+                            df_ncm = st.session_state[cache_key_ncm].copy()
                             max_valor = df_ncm['Valor'].max() if len(df_ncm) > 0 else 1
                             max_itens = df_ncm['Itens'].max() if len(df_ncm) > 0 else 1
 
@@ -6051,7 +6053,9 @@ def render_operacao_fiscal(engine, grupo: str):
                     with col2:
                         st.markdown("##### 📋 Top 10 CFOPs")
                         if 'cfop' in df_analise.columns:
-                            if f"{agg_key}_cfop" not in st.session_state:
+                            # Força recriação do cache se estrutura mudou
+                            cache_key_cfop = f"{agg_key}_cfop_v2"
+                            if cache_key_cfop not in st.session_state:
                                 df_temp = df_analise[['cfop', col_infracao]].copy()
                                 df_temp['valor'] = pd.to_numeric(df_temp[col_infracao], errors='coerce').fillna(0)
                                 df_cfop = df_temp.groupby('cfop')['valor'].agg(['sum', 'count']).reset_index()
@@ -6062,9 +6066,9 @@ def render_operacao_fiscal(engine, grupo: str):
                                 cfop_desc = get_cfop_descricoes(engine, df_cfop['CFOP'].tolist())
                                 df_cfop['Descrição'] = df_cfop['CFOP'].astype(str).map(cfop_desc).fillna('')
 
-                                st.session_state[f"{agg_key}_cfop"] = df_cfop
+                                st.session_state[cache_key_cfop] = df_cfop
 
-                            df_cfop = st.session_state[f"{agg_key}_cfop"].copy()
+                            df_cfop = st.session_state[cache_key_cfop].copy()
                             max_valor = df_cfop['Valor'].max() if len(df_cfop) > 0 else 1
                             max_itens = df_cfop['Itens'].max() if len(df_cfop) > 0 else 1
 
@@ -6094,15 +6098,17 @@ def render_operacao_fiscal(engine, grupo: str):
                 # ----- PRODUTOS (TOP 10 - TABELA COM PROGRESS) -----
                 with st.expander("📦 Top 10 Produtos", expanded=False):
                     if 'descricao' in df_analise.columns:
-                        if f"{agg_key}_prod" not in st.session_state:
+                        # Força recriação do cache se estrutura mudou
+                        cache_key_prod = f"{agg_key}_prod_v2"
+                        if cache_key_prod not in st.session_state:
                             df_temp = df_analise[['descricao', col_infracao]].copy()
                             df_temp['valor'] = pd.to_numeric(df_temp[col_infracao], errors='coerce').fillna(0)
                             df_prod = df_temp.groupby('descricao')['valor'].agg(['sum', 'count']).reset_index()
                             df_prod.columns = ['Descrição', 'Valor', 'Itens']
                             df_prod = df_prod.nlargest(10, 'Valor').reset_index(drop=True)
-                            st.session_state[f"{agg_key}_prod"] = df_prod
+                            st.session_state[cache_key_prod] = df_prod
 
-                        df_prod = st.session_state[f"{agg_key}_prod"].copy()
+                        df_prod = st.session_state[cache_key_prod].copy()
                         max_valor = df_prod['Valor'].max() if len(df_prod) > 0 else 1
                         max_itens = df_prod['Itens'].max() if len(df_prod) > 0 else 1
 
